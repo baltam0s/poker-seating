@@ -9,13 +9,14 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
-app.use(express.static("/app/public"));
 
+// serve static files
+app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
-  res.sendFile("/app/public/index.html");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-
+// SQLite DB
 const db = new sqlite3.Database("/app/data/poker.db");
 
 db.run(`
@@ -27,6 +28,7 @@ db.run(`
   )
 `);
 
+// Utility functions
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -42,6 +44,7 @@ function hashSeating(seating) {
     .digest("hex");
 }
 
+// API routes
 app.post("/api/generate", async (req, res) => {
   const players = req.body.players;
 
@@ -91,6 +94,7 @@ app.get("/api/history", (_, res) => {
   );
 });
 
+// Start server
 app.listen(3000, () =>
   console.log("Poker seating app listening on port 3000")
 );
