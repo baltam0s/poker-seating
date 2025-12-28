@@ -1,11 +1,13 @@
+version: "3.9"
+
 services:
-  poker-seating:
+  poker:
     build: .
     container_name: poker-seating
     ports:
-      - "6006:3000"
+      - "6006:3000"      # Host port 6006 -> container 3000
     volumes:
-      - poker-data:/app/data
+      - poker-data:/app/data  # Persist SQLite DB
     restart: unless-stopped
 
 volumes:

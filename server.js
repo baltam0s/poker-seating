@@ -10,13 +10,13 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
-// serve static files
+// Serve static frontend
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// SQLite DB
+// SQLite DB (inside container)
 const db = new sqlite3.Database("/app/data/poker.db");
 
 db.run(`
@@ -28,7 +28,7 @@ db.run(`
   )
 `);
 
-// Utility functions
+// Utilities
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -38,16 +38,12 @@ function shuffle(arr) {
 }
 
 function hashSeating(seating) {
-  return crypto
-    .createHash("sha256")
-    .update(JSON.stringify(seating))
-    .digest("hex");
+  return crypto.createHash("sha256").update(JSON.stringify(seating)).digest("hex");
 }
 
-// API routes
+// API
 app.post("/api/generate", async (req, res) => {
   const players = req.body.players;
-
   if (!Array.isArray(players) || players.length < 2) {
     return res.status(400).json({ error: "Invalid players list" });
   }
@@ -55,23 +51,15 @@ app.post("/api/generate", async (req, res) => {
   let attempts = 0;
   while (attempts < 50) {
     attempts++;
-
     const seating = shuffle([...players]);
     const hash = hashSeating(seating);
 
     const exists = await new Promise(resolve => {
-      db.get(
-        "SELECT 1 FROM games WHERE seating_hash = ?",
-        [hash],
-        (_, row) => resolve(!!row)
-      );
+      db.get("SELECT 1 FROM games WHERE seating_hash = ?", [hash], (_, row) => resolve(!!row));
     });
 
     if (!exists) {
-      db.run(
-        "INSERT INTO games (players, seating_hash) VALUES (?, ?)",
-        [JSON.stringify(seating), hash]
-      );
+      db.run("INSERT INTO games (players, seating_hash) VALUES (?, ?)", [JSON.stringify(seating), hash]);
       return res.json({ seating });
     }
   }
@@ -80,21 +68,10 @@ app.post("/api/generate", async (req, res) => {
 });
 
 app.get("/api/history", (_, res) => {
-  db.all(
-    "SELECT id, created_at, players FROM games ORDER BY id DESC LIMIT 10",
-    [],
-    (_, rows) => {
-      res.json(
-        rows.map(r => ({
-          ...r,
-          players: JSON.parse(r.players)
-        }))
-      );
-    }
-  );
+  db.all("SELECT id, created_at, players FROM games ORDER BY id DESC LIMIT 10", [], (_, rows) => {
+    res.json(rows.map(r => ({ ...r, players: JSON.parse(r.players) })));
+  });
 });
 
 // Start server
-app.listen(3000, () =>
-  console.log("Poker seating app listening on port 3000")
-);
+app.listen(3000, () => console.log("Poker seating app listening on port 3000"));
