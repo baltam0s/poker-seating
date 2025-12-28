@@ -11,7 +11,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const db = new sqlite3.Database("./poker.db");
+const db = new sqlite3.Database("/app/data/poker.db");
 
 db.run(`
   CREATE TABLE IF NOT EXISTS games (
