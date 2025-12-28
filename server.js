@@ -9,7 +9,12 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static("/app/public"));
+
+app.get("/", (req, res) => {
+  res.sendFile("/app/public/index.html");
+});
+
 
 const db = new sqlite3.Database("/app/data/poker.db");
 
