@@ -5,9 +5,9 @@ services:
     build: .
     container_name: poker-seating
     ports:
-      - "6006:3000"      # Host port 6006 -> container 3000
+      - "6006:3000"      # Host 6006 -> container 3000
     volumes:
-      - poker-data:/app/data  # Persist SQLite DB
+      - poker-data:/app/data   # only persist DB
     restart: unless-stopped
 
 volumes:
