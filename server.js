@@ -86,6 +86,6 @@ app.get("/api/history", (_, res) => {
   );
 });
 
-app.listen(6006, () =>
-  console.log("Poker seating app listening on port 6006")
+app.listen(3000, () =>
+  console.log("Poker seating app listening on port 3000")
 );
