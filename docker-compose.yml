@@ -1,11 +1,12 @@
-version: "3.9"
-
 services:
   poker-seating:
     build: .
     container_name: poker-seating
     ports:
-      - "6006:6006"
+      - "6006:3000"
     volumes:
-      - ./poker.db:/app/poker.db
+      - poker-data:/app/data
     restart: unless-stopped
+
+volumes:
+  poker-data:
