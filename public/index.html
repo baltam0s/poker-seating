@@ -1,91 +1,363 @@
-import express from "express";
-import sqlite3 from "sqlite3";
-import crypto from "crypto";
-import path from "path";
-import { fileURLToPath } from "url";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poker Seating Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
-const app = express();
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
 
-const db = new sqlite3.Database("./poker.db");
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2em;
+    }
 
-db.run(`
-  CREATE TABLE IF NOT EXISTS games (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    players TEXT NOT NULL,
-    seating_hash TEXT UNIQUE NOT NULL
-  )
-`);
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
 
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+    .input-section {
+      margin-bottom: 30px;
+    }
 
-function hashSeating(seating) {
-  return crypto
-    .createHash("sha256")
-    .update(JSON.stringify(seating))
-    .digest("hex");
-}
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #555;
+      font-weight: 600;
+    }
 
-app.post("/api/generate", async (req, res) => {
-  const players = req.body.players;
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
 
-  if (!Array.isArray(players) || players.length < 2) {
-    return res.status(400).json({ error: "Invalid players list" });
-  }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+    }
 
-  let attempts = 0;
-  while (attempts < 50) {
-    attempts++;
+    .hint {
+      font-size: 0.85em;
+      color: #999;
+      margin-top: 5px;
+    }
 
-    const seating = shuffle([...players]);
-    const hash = hashSeating(seating);
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
 
-    const exists = await new Promise(resolve => {
-      db.get(
-        "SELECT 1 FROM games WHERE seating_hash = ?",
-        [hash],
-        (_, row) => resolve(!!row)
-      );
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-section {
+      margin-top: 30px;
+      padding: 25px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .result-section.show {
+      display: block;
+      animation: fadeIn 0.5s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-title {
+      color: #333;
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .seating-list {
+      list-style: none;
+    }
+
+    .seating-item {
+      padding: 12px 15px;
+      margin-bottom: 8px;
+      background: white;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .seat-number {
+      background: #667eea;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 0.9em;
+    }
+
+    .player-name {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .history-section {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    .history-title {
+      color: #333;
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .history-item {
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .history-date {
+      font-size: 0.85em;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .history-players {
+      color: #555;
+      font-size: 0.95em;
+    }
+
+    .loading {
+      text-align: center;
+      color: #667eea;
+      padding: 20px;
+      display: none;
+    }
+
+    .loading.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎰 Poker Seating Generator</h1>
+    <p class="subtitle">Generate unique seating arrangements for your poker games</p>
+
+    <div class="input-section">
+      <label for="players">Player Names</label>
+      <input 
+        type="text" 
+        id="players" 
+        placeholder="Enter player names separated by commas"
+        autocomplete="off"
+      >
+      <p class="hint">Example: Alice, Bob, Charlie, Diana, Eve</p>
+    </div>
+
+    <button id="generateBtn" onclick="generateSeating()">
+      Generate Seating
+    </button>
+
+    <div class="error" id="error"></div>
+    <div class="loading" id="loading">Generating seating arrangement...</div>
+
+    <div class="result-section" id="result">
+      <h2 class="result-title">🪑 Seating Arrangement</h2>
+      <ol class="seating-list" id="seatingList"></ol>
+    </div>
+
+    <div class="history-section">
+      <h2 class="history-title">📜 Recent Games</h2>
+      <div id="history"></div>
+    </div>
+  </div>
+
+  <script>
+    // Load history on page load
+    window.addEventListener('DOMContentLoaded', loadHistory);
+
+    async function generateSeating() {
+      const input = document.getElementById('players').value;
+      const players = input.split(',').map(p => p.trim()).filter(p => p.length > 0);
+
+      const errorDiv = document.getElementById('error');
+      const resultDiv = document.getElementById('result');
+      const loadingDiv = document.getElementById('loading');
+      const generateBtn = document.getElementById('generateBtn');
+
+      // Reset
+      errorDiv.classList.remove('show');
+      resultDiv.classList.remove('show');
+      errorDiv.textContent = '';
+
+      // Validate
+      if (players.length < 2) {
+        errorDiv.textContent = 'Please enter at least 2 players';
+        errorDiv.classList.add('show');
+        return;
+      }
+
+      // Show loading
+      loadingDiv.classList.add('show');
+      generateBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ players })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to generate seating');
+        }
+
+        // Display seating
+        displaySeating(data.seating);
+        
+        // Reload history
+        await loadHistory();
+
+      } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.add('show');
+      } finally {
+        loadingDiv.classList.remove('show');
+        generateBtn.disabled = false;
+      }
+    }
+
+    function displaySeating(seating) {
+      const listEl = document.getElementById('seatingList');
+      listEl.innerHTML = '';
+
+      seating.forEach((player, index) => {
+        const li = document.createElement('li');
+        li.className = 'seating-item';
+        li.innerHTML = `
+          <div class="seat-number">${index + 1}</div>
+          <div class="player-name">${player}</div>
+        `;
+        listEl.appendChild(li);
+      });
+
+      document.getElementById('result').classList.add('show');
+    }
+
+    async function loadHistory() {
+      try {
+        const response = await fetch('/api/history');
+        const games = await response.json();
+        
+        const historyDiv = document.getElementById('history');
+        
+        if (games.length === 0) {
+          historyDiv.innerHTML = '<p style="color: #999; font-style: italic;">No games yet</p>';
+          return;
+        }
+
+        historyDiv.innerHTML = games.map(game => {
+          const date = new Date(game.created_at).toLocaleString();
+          const players = game.players.join(', ');
+          return `
+            <div class="history-item">
+              <div class="history-date">${date}</div>
+              <div class="history-players">${players}</div>
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        console.error('Failed to load history:', error);
+      }
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('players').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        generateSeating();
+      }
     });
-
-    if (!exists) {
-      db.run(
-        "INSERT INTO games (players, seating_hash) VALUES (?, ?)",
-        [JSON.stringify(seating), hash]
-      );
-      return res.json({ seating });
-    }
-  }
-
-  res.status(409).json({ error: "Could not generate unique seating" });
-});
-
-app.get("/api/history", (_, res) => {
-  db.all(
-    "SELECT id, created_at, players FROM games ORDER BY id DESC LIMIT 10",
-    [],
-    (_, rows) => {
-      res.json(
-        rows.map(r => ({
-          ...r,
-          players: JSON.parse(r.players)
-        }))
-      );
-    }
-  );
-});
-
-app.listen(3000, () =>
-  console.log("Poker seating app listening on port 3000")
-);
+  </script>
+</body>
+</html>

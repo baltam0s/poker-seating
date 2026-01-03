@@ -1,14 +1,16 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  poker:
+  poker-seating:
     build: .
-    container_name: poker-seating
     ports:
-      - "6006:3000"      # Host 6006 -> container 3000
+      - "3000:3000"
     volumes:
-      - poker-data:/app/data   # only persist DB
+      - poker-data:/app/data
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
 
 volumes:
   poker-data:

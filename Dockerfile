@@ -1,19 +1,22 @@
-# Use Node 20 Alpine image
-FROM node:20-alpine
+FROM node:18-alpine
 
-# Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies inside container
-COPY package.json ./
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
 RUN npm install --production
 
-# Copy app code and frontend
+# Copy application files
 COPY server.js ./
 COPY public ./public
 
-# Expose the port the app listens on
+# Create data directory for SQLite
+RUN mkdir -p /app/data
+
+# Expose port
 EXPOSE 3000
 
-# Run the server
+# Start the application
 CMD ["node", "server.js"]
