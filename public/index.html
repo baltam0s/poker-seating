@@ -16,34 +16,61 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
       padding: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
 
     .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 968px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
       background: white;
       border-radius: 16px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      padding: 40px;
-      max-width: 600px;
-      width: 100%;
+      padding: 30px;
     }
 
-    h1 {
+    .card h2 {
       color: #333;
-      margin-bottom: 10px;
-      font-size: 2em;
+      margin-bottom: 20px;
+      font-size: 1.5em;
     }
 
-    .subtitle {
-      color: #666;
-      margin-bottom: 30px;
-      font-size: 0.95em;
+    .section {
+      margin-bottom: 25px;
     }
 
-    .input-section {
-      margin-bottom: 30px;
+    .section:last-child {
+      margin-bottom: 0;
     }
 
     label {
@@ -71,6 +98,41 @@
       font-size: 0.85em;
       color: #999;
       margin-top: 5px;
+    }
+
+    .player-selection {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .player-checkbox {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .player-checkbox:hover {
+      background: #e9ecef;
+    }
+
+    .player-checkbox input[type="checkbox"] {
+      margin-right: 8px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .player-checkbox label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: 500;
+      color: #333;
     }
 
     button {
@@ -101,63 +163,9 @@
       transform: none;
     }
 
-    .result-section {
-      margin-top: 30px;
-      padding: 25px;
-      background: #f8f9fa;
-      border-radius: 12px;
-      display: none;
-    }
-
-    .result-section.show {
-      display: block;
-      animation: fadeIn 0.5s;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .result-title {
-      color: #333;
-      font-size: 1.3em;
-      margin-bottom: 15px;
-      font-weight: 600;
-    }
-
-    .seating-list {
-      list-style: none;
-    }
-
-    .seating-item {
-      padding: 12px 15px;
-      margin-bottom: 8px;
-      background: white;
-      border-radius: 8px;
-      border-left: 4px solid #667eea;
-      display: flex;
-      align-items: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .seat-number {
-      background: #667eea;
-      color: white;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      margin-right: 12px;
-      font-size: 0.9em;
-    }
-
-    .player-name {
-      color: #333;
-      font-weight: 500;
+    .btn-secondary {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      margin-top: 10px;
     }
 
     .error {
@@ -173,17 +181,171 @@
       display: block;
     }
 
-    .history-section {
-      margin-top: 40px;
-      padding-top: 30px;
-      border-top: 2px solid #e0e0e0;
+    .loading {
+      text-align: center;
+      color: #667eea;
+      padding: 20px;
+      display: none;
     }
 
-    .history-title {
+    .loading.show {
+      display: block;
+    }
+
+    /* Poker Table */
+    .poker-table-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 500px;
+      position: relative;
+    }
+
+    .poker-table {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 1;
+    }
+
+    .table-surface {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a5f1a 0%, #2d8b2d 100%);
+      border-radius: 50%;
+      border: 15px solid #8b4513;
+      box-shadow:
+        inset 0 0 50px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .table-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255, 255, 255, 0.2);
+      font-size: 3em;
+      font-weight: bold;
+      user-select: none;
+    }
+
+    .seat {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transform: translate(-50%, -50%);
+      border: 3px solid #667eea;
+    }
+
+    .seat-number {
+      background: #667eea;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.85em;
+      margin-bottom: 4px;
+    }
+
+    .seat-name {
+      font-size: 0.75em;
+      color: #333;
+      font-weight: 600;
+      text-align: center;
+      max-width: 70px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-table {
+      text-align: center;
+      color: #999;
+      padding: 40px;
+    }
+
+    /* Winner Selection */
+    .winner-section {
+      display: none;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+
+    .winner-section.show {
+      display: block;
+    }
+
+    .winner-title {
       color: #333;
       font-size: 1.2em;
       margin-bottom: 15px;
       font-weight: 600;
+    }
+
+    .winner-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .winner-btn {
+      padding: 12px;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .winner-btn:hover {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    /* Stats Section */
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .stats-table th,
+    .stats-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .stats-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .stats-table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .win-rate {
+      font-weight: 600;
+      color: #28a745;
     }
 
     .history-item {
@@ -202,76 +364,213 @@
     .history-players {
       color: #555;
       font-size: 0.95em;
+      margin-bottom: 5px;
     }
 
-    .loading {
-      text-align: center;
+    .history-winner {
+      color: #28a745;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .tab:hover {
       color: #667eea;
-      padding: 20px;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
       display: none;
     }
 
-    .loading.show {
+    .tab-content.active {
       display: block;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎰 Poker Seating Generator</h1>
-    <p class="subtitle">Generate unique seating arrangements for your poker games</p>
-
-    <div class="input-section">
-      <label for="players">Player Names</label>
-      <input 
-        type="text" 
-        id="players" 
-        placeholder="Enter player names separated by commas"
-        autocomplete="off"
-      >
-      <p class="hint">Example: Alice, Bob, Charlie, Diana, Eve</p>
+    <div class="header">
+      <h1>🎰 Poker Seating Generator</h1>
+      <p>Generate unique seating arrangements and track game winners</p>
     </div>
 
-    <button id="generateBtn" onclick="generateSeating()">
-      Generate Seating
-    </button>
+    <div class="main-content">
+      <!-- Left Column: Setup -->
+      <div class="card">
+        <h2>🎮 Game Setup</h2>
 
-    <div class="error" id="error"></div>
-    <div class="loading" id="loading">Generating seating arrangement...</div>
+        <div class="section">
+          <label>Select Players</label>
+          <div class="player-selection" id="playerSelection"></div>
+        </div>
 
-    <div class="result-section" id="result">
-      <h2 class="result-title">🪑 Seating Arrangement</h2>
-      <ol class="seating-list" id="seatingList"></ol>
+        <div class="section">
+          <label for="newPlayer">Add New Player</label>
+          <input
+            type="text"
+            id="newPlayer"
+            placeholder="Enter player name"
+            autocomplete="off"
+          >
+          <button class="btn-secondary" onclick="addNewPlayer()">Add Player</button>
+        </div>
+
+        <button id="generateBtn" onclick="generateSeating()">
+          Generate Seating
+        </button>
+
+        <div class="error" id="error"></div>
+        <div class="loading" id="loading">Generating seating arrangement...</div>
+
+        <div class="winner-section" id="winnerSection">
+          <h3 class="winner-title">🏆 Select Winner</h3>
+          <div class="winner-buttons" id="winnerButtons"></div>
+        </div>
+      </div>
+
+      <!-- Right Column: Table Visualization -->
+      <div class="card">
+        <h2>🪑 Poker Table</h2>
+        <div class="poker-table-container" id="tableContainer">
+          <div class="empty-table">
+            <p>Generate a seating arrangement to see the table</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="history-section">
-      <h2 class="history-title">📜 Recent Games</h2>
-      <div id="history"></div>
+    <!-- Stats and History -->
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('stats')">📊 Player Stats</button>
+        <button class="tab" onclick="switchTab('history')">📜 Game History</button>
+      </div>
+
+      <div id="statsTab" class="tab-content active">
+        <table class="stats-table" id="statsTable">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Games Played</th>
+              <th>Wins</th>
+              <th>Win Rate</th>
+            </tr>
+          </thead>
+          <tbody id="statsBody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: #999;">No data yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="historyTab" class="tab-content">
+        <div id="history">
+          <p style="color: #999; font-style: italic;">No games yet</p>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // Load history on page load
-    window.addEventListener('DOMContentLoaded', loadHistory);
+    let currentGameId = null;
+    let currentSeating = [];
+    let predefinedPlayers = [
+      'Dime', 'Lazić', 'Peđa', 'Đovani', 'Bane', 'Miha', 'Šegi'
+    ];
+
+    // Load data on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPredefinedPlayers();
+      renderPlayerSelection();
+      loadStats();
+      loadHistory();
+    });
+
+    function loadPredefinedPlayers() {
+      const saved = localStorage.getItem('pokerPlayers');
+      if (saved) {
+        predefinedPlayers = JSON.parse(saved);
+      }
+    }
+
+    function savePredefinedPlayers() {
+      localStorage.setItem('pokerPlayers', JSON.stringify(predefinedPlayers));
+    }
+
+    function renderPlayerSelection() {
+      const container = document.getElementById('playerSelection');
+      container.innerHTML = predefinedPlayers.map((player, index) => `
+        <div class="player-checkbox">
+          <input type="checkbox" id="player-${index}" value="${player}">
+          <label for="player-${index}">${player}</label>
+        </div>
+      `).join('');
+    }
+
+    function addNewPlayer() {
+      const input = document.getElementById('newPlayer');
+      const name = input.value.trim();
+
+      if (!name) {
+        showError('Please enter a player name');
+        return;
+      }
+
+      if (predefinedPlayers.includes(name)) {
+        showError('Player already exists');
+        return;
+      }
+
+      predefinedPlayers.push(name);
+      savePredefinedPlayers();
+      renderPlayerSelection();
+      input.value = '';
+    }
+
+    function getSelectedPlayers() {
+      const checkboxes = document.querySelectorAll('#playerSelection input[type="checkbox"]:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
 
     async function generateSeating() {
-      const input = document.getElementById('players').value;
-      const players = input.split(',').map(p => p.trim()).filter(p => p.length > 0);
+      const players = getSelectedPlayers();
 
       const errorDiv = document.getElementById('error');
-      const resultDiv = document.getElementById('result');
       const loadingDiv = document.getElementById('loading');
       const generateBtn = document.getElementById('generateBtn');
+      const winnerSection = document.getElementById('winnerSection');
 
       // Reset
       errorDiv.classList.remove('show');
-      resultDiv.classList.remove('show');
+      winnerSection.classList.remove('show');
       errorDiv.textContent = '';
 
       // Validate
       if (players.length < 2) {
-        errorDiv.textContent = 'Please enter at least 2 players';
-        errorDiv.classList.add('show');
+        showError('Please select at least 2 players');
         return;
       }
 
@@ -292,45 +591,128 @@
           throw new Error(data.error || 'Failed to generate seating');
         }
 
-        // Display seating
-        displaySeating(data.seating);
-        
-        // Reload history
-        await loadHistory();
+        currentGameId = data.gameId;
+        currentSeating = data.seating;
+
+        // Display table
+        displayPokerTable(data.seating);
+
+        // Show winner selection
+        displayWinnerButtons(data.seating);
 
       } catch (error) {
-        errorDiv.textContent = error.message;
-        errorDiv.classList.add('show');
+        showError(error.message);
       } finally {
         loadingDiv.classList.remove('show');
         generateBtn.disabled = false;
       }
     }
 
-    function displaySeating(seating) {
-      const listEl = document.getElementById('seatingList');
-      listEl.innerHTML = '';
+    function displayPokerTable(seating) {
+      const container = document.getElementById('tableContainer');
+      const numSeats = seating.length;
 
-      seating.forEach((player, index) => {
-        const li = document.createElement('li');
-        li.className = 'seating-item';
-        li.innerHTML = `
-          <div class="seat-number">${index + 1}</div>
-          <div class="player-name">${player}</div>
-        `;
-        listEl.appendChild(li);
-      });
+      container.innerHTML = `
+        <div class="poker-table">
+          <div class="table-surface">
+            <div class="table-center">♠♥♣♦</div>
+            ${seating.map((player, index) => {
+              const angle = (index / numSeats) * 2 * Math.PI - Math.PI / 2;
+              const radius = 45; // percentage
+              const x = 50 + radius * Math.cos(angle);
+              const y = 50 + radius * Math.sin(angle);
 
-      document.getElementById('result').classList.add('show');
+              return `
+                <div class="seat" style="left: ${x}%; top: ${y}%;">
+                  <div class="seat-number">${index + 1}</div>
+                  <div class="seat-name">${player}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function displayWinnerButtons(seating) {
+      const container = document.getElementById('winnerButtons');
+      container.innerHTML = seating.map(player => `
+        <button class="winner-btn" onclick="selectWinner('${player}')">${player}</button>
+      `).join('');
+
+      document.getElementById('winnerSection').classList.add('show');
+    }
+
+    async function selectWinner(winner) {
+      if (!currentGameId) {
+        showError('No active game');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/winner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: currentGameId,
+            winner: winner
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to record winner');
+        }
+
+        // Refresh stats and history
+        await loadStats();
+        await loadHistory();
+
+        // Hide winner section
+        document.getElementById('winnerSection').classList.remove('show');
+
+        // Show success message
+        alert(`🏆 ${winner} wins!`);
+
+      } catch (error) {
+        showError(error.message);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+
+        const tbody = document.getElementById('statsBody');
+
+        if (stats.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No data yet</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = stats
+          .sort((a, b) => b.winRate - a.winRate)
+          .map(stat => `
+            <tr>
+              <td>${stat.player}</td>
+              <td>${stat.gamesPlayed}</td>
+              <td>${stat.wins}</td>
+              <td class="win-rate">${stat.winRate}%</td>
+            </tr>
+          `).join('');
+
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
     }
 
     async function loadHistory() {
       try {
         const response = await fetch('/api/history');
         const games = await response.json();
-        
+
         const historyDiv = document.getElementById('history');
-        
+
         if (games.length === 0) {
           historyDiv.innerHTML = '<p style="color: #999; font-style: italic;">No games yet</p>';
           return;
@@ -339,10 +721,12 @@
         historyDiv.innerHTML = games.map(game => {
           const date = new Date(game.created_at).toLocaleString();
           const players = game.players.join(', ');
+          const winner = game.winner ? `<div class="history-winner">🏆 Winner: ${game.winner}</div>` : '';
           return `
             <div class="history-item">
               <div class="history-date">${date}</div>
               <div class="history-players">${players}</div>
+              ${winner}
             </div>
           `;
         }).join('');
@@ -352,10 +736,25 @@
       }
     }
 
-    // Allow Enter key to submit
-    document.getElementById('players').addEventListener('keypress', (e) => {
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tab + 'Tab').classList.add('active');
+    }
+
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.classList.add('show');
+      setTimeout(() => errorDiv.classList.remove('show'), 5000);
+    }
+
+    // Allow Enter key in new player input
+    document.getElementById('newPlayer').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
-        generateSeating();
+        addNewPlayer();
       }
     });
   </script>
