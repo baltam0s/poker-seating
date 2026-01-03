@@ -15,7 +15,13 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      padding: 20px;
+      padding: 10px;
+    }
+
+    @media (min-width: 768px) {
+      body {
+        padding: 20px;
+      }
     }
 
     .container {
@@ -31,13 +37,24 @@
     }
 
     .header h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
+      font-size: 1.8em;
+      margin-bottom: 8px;
     }
 
     .header p {
-      font-size: 1.1em;
+      font-size: 0.9em;
       opacity: 0.9;
+    }
+
+    @media (min-width: 768px) {
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.1em;
+      }
     }
 
     .admin-toggle {
@@ -47,11 +64,20 @@
       background: rgba(255, 255, 255, 0.2);
       color: white;
       border: 2px solid white;
-      padding: 8px 16px;
-      border-radius: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
       cursor: pointer;
       font-weight: 600;
+      font-size: 0.85em;
       transition: all 0.2s;
+    }
+
+    @media (min-width: 768px) {
+      .admin-toggle {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 1em;
+      }
     }
 
     .admin-toggle:hover {
@@ -60,32 +86,54 @@
 
     .main-content {
       display: grid;
-      grid-template-columns: 350px 1fr;
-      gap: 20px;
-      margin-bottom: 20px;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
     }
 
-    @media (max-width: 1100px) {
+    @media (min-width: 1100px) {
       .main-content {
-        grid-template-columns: 1fr;
+        grid-template-columns: 350px 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
       }
     }
 
     .card {
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      padding: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        border-radius: 16px;
+        padding: 30px;
+      }
     }
 
     .card h2 {
       color: #333;
-      margin-bottom: 20px;
-      font-size: 1.5em;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    @media (min-width: 768px) {
+      .card h2 {
+        margin-bottom: 20px;
+        font-size: 1.5em;
+      }
     }
 
     .section {
-      margin-bottom: 25px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .section {
+        margin-bottom: 25px;
+      }
     }
 
     .section:last-child {
@@ -107,6 +155,8 @@
       border-radius: 8px;
       font-size: 16px;
       transition: border-color 0.3s;
+      -webkit-appearance: none;
+      appearance: none;
     }
 
     input[type="text"]:focus,
@@ -124,8 +174,14 @@
     .player-selection {
       display: grid;
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 8px;
       margin-top: 10px;
+    }
+
+    @media (min-width: 480px) {
+      .player-selection {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .player-checkbox {
@@ -168,6 +224,8 @@
       cursor: pointer;
       transition: transform 0.2s, box-shadow 0.2s;
       width: 100%;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     button:hover {
@@ -177,6 +235,16 @@
 
     button:active {
       transform: translateY(0);
+    }
+
+    @media (hover: none) {
+      button:hover {
+        transform: none;
+      }
+
+      button:active {
+        opacity: 0.8;
+      }
     }
 
     button:disabled {
@@ -239,27 +307,50 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 500px;
+      min-height: 300px;
       position: relative;
+      padding: 10px 0;
+    }
+
+    @media (min-width: 768px) {
+      .poker-table-container {
+        min-height: 500px;
+      }
     }
 
     .poker-table {
       position: relative;
       width: 100%;
       max-width: 700px;
-      height: 450px;
+      height: 300px;
+    }
+
+    @media (min-width: 768px) {
+      .poker-table {
+        height: 450px;
+      }
     }
 
     .table-surface {
       width: 100%;
       height: 100%;
       background: linear-gradient(135deg, #1a5f1a 0%, #2d8b2d 100%);
-      border-radius: 100px;
-      border: 15px solid #8b4513;
+      border-radius: 60px;
+      border: 8px solid #8b4513;
       box-shadow:
-        inset 0 0 50px rgba(0, 0, 0, 0.3),
-        0 10px 30px rgba(0, 0, 0, 0.4);
+        inset 0 0 30px rgba(0, 0, 0, 0.3),
+        0 5px 20px rgba(0, 0, 0, 0.4);
       position: relative;
+    }
+
+    @media (min-width: 768px) {
+      .table-surface {
+        border-radius: 100px;
+        border: 15px solid #8b4513;
+        box-shadow:
+          inset 0 0 50px rgba(0, 0, 0, 0.3),
+          0 10px 30px rgba(0, 0, 0, 0.4);
+      }
     }
 
     .table-center {
@@ -268,25 +359,41 @@
       left: 50%;
       transform: translate(-50%, -50%);
       color: rgba(255, 255, 255, 0.2);
-      font-size: 3em;
+      font-size: 1.5em;
       font-weight: bold;
       user-select: none;
     }
 
+    @media (min-width: 768px) {
+      .table-center {
+        font-size: 3em;
+      }
+    }
+
     .seat {
       position: absolute;
-      min-width: 90px;
-      padding: 10px 12px;
+      min-width: 70px;
+      padding: 6px 8px;
       background: white;
-      border-radius: 12px;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       transform: translate(-50%, -50%);
-      border: 3px solid #667eea;
+      border: 2px solid #667eea;
       transition: all 0.3s;
+    }
+
+    @media (min-width: 768px) {
+      .seat {
+        min-width: 90px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        border: 3px solid #667eea;
+      }
     }
 
     .seat.eliminated {
@@ -310,30 +417,46 @@
     .seat-number {
       background: #667eea;
       color: white;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 0.85em;
+      font-size: 0.75em;
+    }
+
+    @media (min-width: 768px) {
+      .seat-number {
+        width: 24px;
+        height: 24px;
+        font-size: 0.85em;
+      }
     }
 
     .eliminate-btn {
       background: #dc3545;
       color: white;
       border: none;
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 0;
       transition: all 0.2s;
+    }
+
+    @media (min-width: 768px) {
+      .eliminate-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+      }
     }
 
     .eliminate-btn:hover {
@@ -342,11 +465,21 @@
     }
 
     .seat-name {
-      font-size: 0.9em;
+      font-size: 0.75em;
       color: #333;
       font-weight: 600;
       text-align: center;
       white-space: nowrap;
+      max-width: 60px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (min-width: 768px) {
+      .seat-name {
+        font-size: 0.9em;
+        max-width: 80px;
+      }
     }
 
     .empty-table {
@@ -359,17 +492,31 @@
     .timer-section {
       background: #f8f9fa;
       border-radius: 12px;
-      padding: 20px;
+      padding: 15px;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+    }
+
+    @media (min-width: 768px) {
+      .timer-section {
+        padding: 20px;
+        margin-bottom: 20px;
+      }
     }
 
     .timer-display {
-      font-size: 3em;
+      font-size: 2em;
       font-weight: bold;
       color: #333;
-      margin: 15px 0;
+      margin: 10px 0;
       font-family: 'Courier New', monospace;
+    }
+
+    @media (min-width: 768px) {
+      .timer-display {
+        font-size: 3em;
+        margin: 15px 0;
+      }
     }
 
     .timer-display.warning {
@@ -388,22 +535,46 @@
 
     .timer-controls {
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
       justify-content: center;
-      margin-top: 15px;
+      margin-top: 12px;
+    }
+
+    @media (min-width: 768px) {
+      .timer-controls {
+        gap: 10px;
+        margin-top: 15px;
+      }
     }
 
     .timer-btn {
-      padding: 10px 20px;
+      padding: 8px 16px;
       font-size: 14px;
       width: auto;
+      flex: 1;
+      min-width: 80px;
+    }
+
+    @media (min-width: 480px) {
+      .timer-btn {
+        padding: 10px 20px;
+        flex: 0;
+      }
     }
 
     .blind-level {
-      font-size: 1.2em;
+      font-size: 1em;
       color: #555;
-      margin-top: 10px;
+      margin-top: 8px;
       font-weight: 600;
+    }
+
+    @media (min-width: 768px) {
+      .blind-level {
+        font-size: 1.2em;
+        margin-top: 10px;
+      }
     }
 
     /* Winner Selection */
@@ -428,8 +599,21 @@
 
     .winner-buttons {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    @media (min-width: 480px) {
+      .winner-buttons {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .winner-buttons {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      }
     }
 
     .winner-btn {
@@ -458,13 +642,27 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 15px;
+      font-size: 0.9em;
+    }
+
+    @media (min-width: 768px) {
+      .stats-table {
+        font-size: 1em;
+      }
     }
 
     .stats-table th,
     .stats-table td {
-      padding: 12px;
+      padding: 10px 8px;
       text-align: left;
       border-bottom: 1px solid #e0e0e0;
+    }
+
+    @media (min-width: 768px) {
+      .stats-table th,
+      .stats-table td {
+        padding: 12px;
+      }
     }
 
     .stats-table th {
@@ -483,23 +681,44 @@
     }
 
     .history-item {
-      padding: 15px;
+      padding: 12px;
       background: #f8f9fa;
       border-radius: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       position: relative;
     }
 
+    @media (min-width: 768px) {
+      .history-item {
+        padding: 15px;
+        margin-bottom: 12px;
+      }
+    }
+
     .history-date {
-      font-size: 0.85em;
+      font-size: 0.8em;
       color: #999;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }
+
+    @media (min-width: 768px) {
+      .history-date {
+        font-size: 0.85em;
+        margin-bottom: 8px;
+      }
     }
 
     .history-players {
       color: #555;
-      font-size: 0.95em;
-      margin-bottom: 5px;
+      font-size: 0.9em;
+      margin-bottom: 4px;
+    }
+
+    @media (min-width: 768px) {
+      .history-players {
+        font-size: 0.95em;
+        margin-bottom: 5px;
+      }
     }
 
     .history-winner {
@@ -509,15 +728,27 @@
     }
 
     .history-actions {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      display: none;
+      position: relative;
+      top: auto;
+      right: auto;
+      display: flex;
       gap: 5px;
+      margin-top: 10px;
+      justify-content: flex-end;
     }
 
-    .history-item:hover .history-actions {
-      display: flex;
+    @media (min-width: 768px) {
+      .history-actions {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: none;
+        margin-top: 0;
+      }
+
+      .history-item:hover .history-actions {
+        display: flex;
+      }
     }
 
     .action-btn {
@@ -528,13 +759,22 @@
 
     .tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 5px;
+      margin-bottom: 15px;
       border-bottom: 2px solid #e0e0e0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (min-width: 768px) {
+      .tabs {
+        gap: 10px;
+        margin-bottom: 20px;
+      }
     }
 
     .tab {
-      padding: 10px 20px;
+      padding: 8px 16px;
       background: none;
       border: none;
       border-bottom: 3px solid transparent;
@@ -543,6 +783,15 @@
       color: #666;
       transition: all 0.2s;
       width: auto;
+      white-space: nowrap;
+      font-size: 0.9em;
+    }
+
+    @media (min-width: 768px) {
+      .tab {
+        padding: 10px 20px;
+        font-size: 1em;
+      }
     }
 
     .tab:hover {
@@ -575,6 +824,7 @@
       z-index: 1000;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
 
     .modal.show {
@@ -583,17 +833,31 @@
 
     .modal-content {
       background: white;
-      border-radius: 16px;
-      padding: 30px;
+      border-radius: 12px;
+      padding: 20px;
       max-width: 400px;
-      width: 90%;
+      width: 100%;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     }
 
+    @media (min-width: 768px) {
+      .modal-content {
+        border-radius: 16px;
+        padding: 30px;
+      }
+    }
+
     .modal-title {
-      font-size: 1.5em;
+      font-size: 1.3em;
       color: #333;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
+    }
+
+    @media (min-width: 768px) {
+      .modal-title {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+      }
     }
 
     .modal-actions {
@@ -610,11 +874,33 @@
       display: inline-block;
       background: #ffc107;
       color: #333;
-      padding: 4px 8px;
+      padding: 3px 6px;
       border-radius: 4px;
-      font-size: 0.75em;
+      font-size: 0.65em;
       font-weight: bold;
-      margin-left: 10px;
+      margin-left: 6px;
+    }
+
+    @media (min-width: 768px) {
+      .admin-badge {
+        padding: 4px 8px;
+        font-size: 0.75em;
+        margin-left: 10px;
+      }
+    }
+
+    .empty-table {
+      text-align: center;
+      color: #999;
+      padding: 30px 20px;
+      font-size: 0.95em;
+    }
+
+    @media (min-width: 768px) {
+      .empty-table {
+        padding: 40px;
+        font-size: 1em;
+      }
     }
   </style>
 </head>
@@ -897,23 +1183,43 @@
 
     function calculateRectangularPositions(numSeats) {
       const positions = [];
-      const longSide = Math.ceil(numSeats / 2);
-      const shortSide = Math.floor(numSeats / 2);
 
-      // Top side (left to right)
-      for (let i = 0; i < longSide; i++) {
-        positions.push({
-          x: 15 + (i * 70 / (longSide - 1 || 1)),
-          y: 10
-        });
-      }
+      // Distribute players around all four sides
+      // Calculate how many on each side
+      const perSide = Math.ceil(numSeats / 4);
 
-      // Bottom side (right to left)
-      for (let i = 0; i < shortSide; i++) {
-        positions.push({
-          x: 85 - (i * 70 / (shortSide - 1 || 1)),
-          y: 90
-        });
+      for (let i = 0; i < numSeats; i++) {
+        let x, y;
+
+        if (i < perSide) {
+          // Top side (left to right)
+          const progress = perSide > 1 ? i / (perSide - 1) : 0.5;
+          x = 15 + progress * 70;
+          y = 10;
+        } else if (i < perSide * 2) {
+          // Right side (top to bottom)
+          const seatOnSide = i - perSide;
+          const seatsOnRightSide = Math.min(perSide, numSeats - perSide);
+          const progress = seatsOnRightSide > 1 ? seatOnSide / (seatsOnRightSide - 1) : 0.5;
+          x = 90;
+          y = 20 + progress * 60;
+        } else if (i < perSide * 3) {
+          // Bottom side (right to left)
+          const seatOnSide = i - perSide * 2;
+          const seatsOnBottomSide = Math.min(perSide, numSeats - perSide * 2);
+          const progress = seatsOnBottomSide > 1 ? seatOnSide / (seatsOnBottomSide - 1) : 0.5;
+          x = 85 - progress * 70;
+          y = 90;
+        } else {
+          // Left side (bottom to top)
+          const seatOnSide = i - perSide * 3;
+          const seatsOnLeftSide = numSeats - perSide * 3;
+          const progress = seatsOnLeftSide > 1 ? seatOnSide / (seatsOnLeftSide - 1) : 0.5;
+          x = 10;
+          y = 80 - progress * 60;
+        }
+
+        positions.push({ x, y });
       }
 
       return positions;
