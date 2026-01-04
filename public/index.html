@@ -1590,18 +1590,32 @@
     async function loadHistory() {
       try {
         const response = await fetch('/api/history');
-        const games = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('History response:', data); // Debug log
 
         const historyDiv = document.getElementById('history');
 
-        if (games.length === 0) {
-          historyDiv.innerHTML = '<p style="color: #999; font-style: italic;">No games yet</p>';
+        // Check if data is actually an array
+        if (!Array.isArray(data)) {
+          console.error('Expected array, got:', typeof data, data);
+          historyDiv.innerHTML = '<p style="color: #dc3545;">Error: Invalid data format from server</p>';
           return;
         }
 
-        historyDiv.innerHTML = games.map(game => {
+        if (data.length === 0) {
+          historyDiv.innerHTML = '<p style="color: #999; font-style: italic;">No games yet. Play a game to see history!</p>';
+          return;
+        }
+
+        historyDiv.innerHTML = data.map(game => {
           const date = new Date(game.created_at).toLocaleString();
-          const players = game.players.join(', ');
+          const players = Array.isArray(game.players) ? game.players.join(', ') : 'Unknown players';
           const winner = game.winner ? `<div class="history-winner">🏆 Winner: ${game.winner}</div>` : '<div style="color: #999; font-size: 0.9em;">No winner recorded</div>';
 
           // Show admin actions if logged in as admin
@@ -1625,7 +1639,10 @@
       } catch (error) {
         console.error('Failed to load history:', error);
         const historyDiv = document.getElementById('history');
-        historyDiv.innerHTML = '<p style="color: #dc3545;">Error loading game history. Please try again.</p>';
+        historyDiv.innerHTML = `
+          <p style="color: #dc3545; margin-bottom: 10px;">Error loading game history: ${error.message}</p>
+          <p style="color: #666; font-size: 0.9em;">Check browser console (F12) for more details.</p>
+        `;
       }
     }
 
