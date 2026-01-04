@@ -38,6 +38,29 @@ db.serialize(() => {
       wins INTEGER DEFAULT 0
     )
   `);
+
+  // Add winner column if it doesn't exist (for existing databases)
+  db.run(`
+    PRAGMA table_info(games)
+  `, [], (err, rows) => {
+    if (!err) {
+      db.all(`PRAGMA table_info(games)`, [], (err, columns) => {
+        if (!err) {
+          const hasWinner = columns.some(col => col.name === 'winner');
+          if (!hasWinner) {
+            console.log('Adding winner column to existing database...');
+            db.run(`ALTER TABLE games ADD COLUMN winner TEXT`, (err) => {
+              if (err) {
+                console.error('Error adding winner column:', err);
+              } else {
+                console.log('Winner column added successfully');
+              }
+            });
+          }
+        }
+      });
+    }
+  });
 });
 
 // Utilities
