@@ -18,6 +18,7 @@ const db = new sqlite3.Database("/app/data/poker.db");
 
 // Create tables
 db.serialize(() => {
+  // Games table
   db.run(`
     CREATE TABLE IF NOT EXISTS games (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,45 +27,58 @@ db.serialize(() => {
       seating_hash TEXT UNIQUE NOT NULL,
       winner TEXT
     )
-  `);
+  `, (err) => {
+    if (err) console.error('Error creating games table:', err);
+  });
 
+  // Player stats table
   db.run(`
     CREATE TABLE IF NOT EXISTS player_stats (
       player TEXT PRIMARY KEY,
       games_played INTEGER DEFAULT 0,
       wins INTEGER DEFAULT 0
     )
-  `);
+  `, (err) => {
+    if (err) console.error('Error creating player_stats table:', err);
+  });
 
+  // Admin config table
   db.run(`
     CREATE TABLE IF NOT EXISTS admin_config (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )
-  `);
-
-  // Add winner column if it doesn't exist (for existing databases)
-  db.run(`
-    PRAGMA table_info(games)
-  `, [], (err, rows) => {
-    if (!err) {
-      db.all(`PRAGMA table_info(games)`, [], (err, columns) => {
-        if (!err) {
-          const hasWinner = columns.some(col => col.name === 'winner');
-          if (!hasWinner) {
-            console.log('Adding winner column to existing database...');
-            db.run(`ALTER TABLE games ADD COLUMN winner TEXT`, (err) => {
-              if (err) {
-                console.error('Error adding winner column:', err);
-              } else {
-                console.log('Winner column added successfully');
-              }
-            });
-          }
-        }
-      });
+  `, (err) => {
+    if (err) {
+      console.error('Error creating admin_config table:', err);
+    } else {
+      console.log('Admin config table ready');
     }
   });
+
+  // Add winner column if it doesn't exist (for existing databases)
+  setTimeout(() => {
+    db.all(`PRAGMA table_info(games)`, [], (err, columns) => {
+      if (err) {
+        console.error('Error checking games table:', err);
+        return;
+      }
+
+      if (columns) {
+        const hasWinner = columns.some(col => col.name === 'winner');
+        if (!hasWinner) {
+          console.log('Adding winner column to existing database...');
+          db.run(`ALTER TABLE games ADD COLUMN winner TEXT`, (err) => {
+            if (err) {
+              console.error('Error adding winner column:', err);
+            } else {
+              console.log('Winner column added successfully');
+            }
+          });
+        }
+      }
+    });
+  }, 100);
 });
 
 // Utilities
@@ -83,8 +97,41 @@ function hashSeating(seating) {
     .digest("hex");
 }
 
+function hashPassword(password) {
+  return crypto
+    .createHash("sha256")
+    .update(password)
+    .digest("hex");
+}
+
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
+}
+
+function getAdminPassword() {
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT value FROM admin_config WHERE key = 'admin_password_hash'",
+      [],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(row ? row.value : null);
+      }
+    );
+  });
+}
+
+function setAdminPassword(passwordHash) {
+  return new Promise((resolve, reject) => {
+    db.run(
+      "INSERT OR REPLACE INTO admin_config (key, value) VALUES ('admin_password_hash', ?)",
+      [passwordHash],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
 }
 
 function verifyAdminToken(req, res, next) {
@@ -348,12 +395,15 @@ app.get("/api/admin/check-setup", async (req, res) => {
     const passwordHash = await getAdminPassword();
     res.json({ setupComplete: !!passwordHash });
   } catch (error) {
+    console.error('Check setup error:', error);
     res.status(500).json({ error: "Failed to check setup status" });
   }
 });
 
 app.post("/api/admin/setup", async (req, res) => {
   const { password } = req.body;
+
+  console.log('Admin setup attempt');
 
   if (!password || password.length < 6) {
     return res.status(400).json({ error: "Password must be at least 6 characters" });
@@ -362,10 +412,12 @@ app.post("/api/admin/setup", async (req, res) => {
   try {
     const existingPassword = await getAdminPassword();
     if (existingPassword) {
+      console.log('Setup blocked: password already exists');
       return res.status(400).json({ error: "Admin password already set" });
     }
 
     const passwordHash = hashPassword(password);
+    console.log('Setting admin password...');
     await setAdminPassword(passwordHash);
 
     const token = generateToken();
@@ -380,7 +432,7 @@ app.post("/api/admin/setup", async (req, res) => {
     res.json({ token, message: "Admin password set successfully" });
   } catch (error) {
     console.error('Setup error:', error);
-    res.status(500).json({ error: "Failed to set admin password" });
+    res.status(500).json({ error: "Failed to set admin password", details: error.message });
   }
 });
 
