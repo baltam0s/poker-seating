@@ -1220,6 +1220,20 @@
     let currentLevel = 1;
     const LEVEL_DURATION = 45 * 60; // 45 minutes
 
+<div class="header">
+      <h1>🎰 Poker Seating Generator</h1>
+      <p>Tournament mode with blind timer and player elimination</p>
+      <button class="admin-toggle" onclick="toggleAdminLogin()">
+        <span id="adminBtnText">🔐 Admin</span>
+      </button>
+      <div class="dark-mode-toggle" onclick="toggleDarkMode()">
+        <span class="dark-mode-label">Dark Mode</span>
+        <div class="toggle-switch" id="darkModeSwitch">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+    </div>
+
     // Load data on page load
     window.addEventListener('DOMContentLoaded', () => {
       loadPredefinedPlayers();
