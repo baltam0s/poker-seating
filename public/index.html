@@ -1044,6 +1044,7 @@
       'Dime', 'Lazić', 'Peđa', 'Đovani', 'Bane', 'Miha', 'Šegi'
     ];
     let isAdmin = false;
+    let needsSetup = false;
 
     // Timer variables
     let timerInterval = null;
@@ -1058,6 +1059,7 @@
       loadStats();
       loadHistory();
       checkAdminStatus();
+      checkSetupStatus();
       updateTimerDisplay();
     });
 
@@ -1417,24 +1419,107 @@
     }
 
     // Admin functions
+    async function checkSetupStatus() {
+      try {
+        const response = await fetch('/api/admin/check-setup');
+        const data = await response.json();
+        needsSetup = !data.setupComplete;
+
+        if (needsSetup) {
+          console.log('First-time setup required');
+        }
+      } catch (error) {
+        console.error('Failed to check setup status:', error);
+      }
+    }
+
     function toggleAdminLogin() {
       if (isAdmin) {
         if (confirm('Are you sure you want to logout from admin mode?')) {
           logout();
         }
       } else {
-        document.getElementById('adminModal').classList.add('show');
+        if (needsSetup) {
+          showSetupModal();
+        } else {
+          document.getElementById('adminModal').classList.add('show');
+        }
       }
     }
 
+    function showSetupModal() {
+      const modal = document.getElementById('adminModal');
+      const title = modal.querySelector('.modal-title');
+      const passwordLabel = modal.querySelector('label[for="adminPassword"]');
+      const loginBtn = modal.querySelector('button[onclick="adminLogin()"]');
+
+      title.textContent = '🔐 First-Time Admin Setup';
+      passwordLabel.textContent = 'Create Admin Password (min. 6 characters)';
+      loginBtn.textContent = 'Create Password';
+      loginBtn.setAttribute('onclick', 'adminSetup()');
+
+      modal.classList.add('show');
+    }
+
     function closeAdminModal() {
-      document.getElementById('adminModal').classList.remove('show');
+      const modal = document.getElementById('adminModal');
+      modal.classList.remove('show');
       document.getElementById('adminPassword').value = '';
       document.getElementById('adminError').classList.remove('show');
+
+      // Reset modal to login state
+      const title = modal.querySelector('.modal-title');
+      const passwordLabel = modal.querySelector('label[for="adminPassword"]');
+      const loginBtn = modal.querySelector('button[onclick*="admin"]');
+
+      title.textContent = 'Admin Login';
+      passwordLabel.textContent = 'Password';
+      loginBtn.textContent = 'Login';
+      loginBtn.setAttribute('onclick', 'adminLogin()');
+    }
+
+    async function adminSetup() {
+      const password = document.getElementById('adminPassword').value;
+      const errorDiv = document.getElementById('adminError');
+
+      if (password.length < 6) {
+        errorDiv.textContent = 'Password must be at least 6 characters';
+        errorDiv.classList.add('show');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          errorDiv.textContent = data.error || 'Setup failed';
+          errorDiv.classList.add('show');
+          return;
+        }
+
+        localStorage.setItem('adminToken', data.token);
+        isAdmin = true;
+        needsSetup = false;
+        closeAdminModal();
+        updateAdminUI();
+        loadHistory();
+        showSuccess('Admin password created successfully! You are now logged in.');
+
+      } catch (error) {
+        errorDiv.textContent = 'Setup failed: ' + error.message;
+        errorDiv.classList.add('show');
+      }
     }
 
     async function adminLogin() {
       const password = document.getElementById('adminPassword').value;
+      const errorDiv = document.getElementById('adminError');
 
       try {
         const response = await fetch('/api/admin/login', {
@@ -1446,8 +1531,14 @@
         const data = await response.json();
 
         if (!response.ok) {
-          document.getElementById('adminError').textContent = data.error || 'Invalid password';
-          document.getElementById('adminError').classList.add('show');
+          if (data.needsSetup) {
+            closeAdminModal();
+            needsSetup = true;
+            showSetupModal();
+            return;
+          }
+          errorDiv.textContent = data.error || 'Invalid password';
+          errorDiv.classList.add('show');
           return;
         }
 
@@ -1455,12 +1546,12 @@
         isAdmin = true;
         closeAdminModal();
         updateAdminUI();
-        loadHistory(); // Reload to show admin actions
+        loadHistory();
         showSuccess('Admin access granted');
 
       } catch (error) {
-        document.getElementById('adminError').textContent = 'Login failed';
-        document.getElementById('adminError').classList.add('show');
+        errorDiv.textContent = 'Login failed';
+        errorDiv.classList.add('show');
       }
     }
 

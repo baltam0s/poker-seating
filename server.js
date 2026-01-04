@@ -10,9 +10,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
-// Admin password - CHANGE THIS TO YOUR OWN PASSWORD
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "poker2025";
-
 // Simple token storage (in production, use Redis or database)
 const adminTokens = new Set();
 
@@ -36,6 +33,13 @@ db.serialize(() => {
       player TEXT PRIMARY KEY,
       games_played INTEGER DEFAULT 0,
       wins INTEGER DEFAULT 0
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS admin_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
     )
   `);
 
@@ -339,22 +343,101 @@ app.get("/api/history", (req, res) => {
 });
 
 // Admin Routes
-app.post("/api/admin/login", (req, res) => {
+app.get("/api/admin/check-setup", async (req, res) => {
+  try {
+    const passwordHash = await getAdminPassword();
+    res.json({ setupComplete: !!passwordHash });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to check setup status" });
+  }
+});
+
+app.post("/api/admin/setup", async (req, res) => {
   const { password } = req.body;
 
-  if (password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ error: "Invalid password" });
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: "Password must be at least 6 characters" });
   }
 
-  const token = generateToken();
-  adminTokens.add(token);
+  try {
+    const existingPassword = await getAdminPassword();
+    if (existingPassword) {
+      return res.status(400).json({ error: "Admin password already set" });
+    }
 
-  // Auto-expire token after 24 hours
-  setTimeout(() => {
-    adminTokens.delete(token);
-  }, 24 * 60 * 60 * 1000);
+    const passwordHash = hashPassword(password);
+    await setAdminPassword(passwordHash);
 
-  res.json({ token });
+    const token = generateToken();
+    adminTokens.add(token);
+
+    // Auto-expire token after 24 hours
+    setTimeout(() => {
+      adminTokens.delete(token);
+    }, 24 * 60 * 60 * 1000);
+
+    console.log('Admin password set successfully');
+    res.json({ token, message: "Admin password set successfully" });
+  } catch (error) {
+    console.error('Setup error:', error);
+    res.status(500).json({ error: "Failed to set admin password" });
+  }
+});
+
+app.post("/api/admin/login", async (req, res) => {
+  const { password } = req.body;
+
+  try {
+    const storedHash = await getAdminPassword();
+
+    if (!storedHash) {
+      return res.status(400).json({ error: "Admin not set up. Please complete setup first.", needsSetup: true });
+    }
+
+    const passwordHash = hashPassword(password);
+
+    if (passwordHash !== storedHash) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    const token = generateToken();
+    adminTokens.add(token);
+
+    // Auto-expire token after 24 hours
+    setTimeout(() => {
+      adminTokens.delete(token);
+    }, 24 * 60 * 60 * 1000);
+
+    res.json({ token });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+app.post("/api/admin/change-password", verifyAdminToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: "New password must be at least 6 characters" });
+  }
+
+  try {
+    const storedHash = await getAdminPassword();
+    const currentHash = hashPassword(currentPassword);
+
+    if (currentHash !== storedHash) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    const newHash = hashPassword(newPassword);
+    await setAdminPassword(newHash);
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: "Failed to change password" });
+  }
 });
 
 app.get("/api/admin/verify", verifyAdminToken, (req, res) => {
@@ -442,5 +525,6 @@ app.get("*", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Poker seating app listening on port ${PORT}`);
-  console.log(`Admin password: ${ADMIN_PASSWORD}`);
+  console.log('Admin password is stored securely in database');
+  console.log('Access the app and complete first-time setup to create admin password');
 });
