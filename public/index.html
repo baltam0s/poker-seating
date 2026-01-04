@@ -1184,42 +1184,74 @@
     function calculateRectangularPositions(numSeats) {
       const positions = [];
 
-      // Distribute players around all four sides
-      // Calculate how many on each side
-      const perSide = Math.ceil(numSeats / 4);
+      // Special case for 7 players: distribute as 2-2-2-1
+      if (numSeats === 7) {
+        // Top: 2 players
+        positions.push({ x: 30, y: 10 });
+        positions.push({ x: 70, y: 10 });
 
-      for (let i = 0; i < numSeats; i++) {
-        let x, y;
+        // Right: 2 players
+        positions.push({ x: 90, y: 35 });
+        positions.push({ x: 90, y: 65 });
 
-        if (i < perSide) {
-          // Top side (left to right)
-          const progress = perSide > 1 ? i / (perSide - 1) : 0.5;
-          x = 15 + progress * 70;
-          y = 10;
-        } else if (i < perSide * 2) {
-          // Right side (top to bottom)
-          const seatOnSide = i - perSide;
-          const seatsOnRightSide = Math.min(perSide, numSeats - perSide);
-          const progress = seatsOnRightSide > 1 ? seatOnSide / (seatsOnRightSide - 1) : 0.5;
-          x = 90;
-          y = 20 + progress * 60;
-        } else if (i < perSide * 3) {
-          // Bottom side (right to left)
-          const seatOnSide = i - perSide * 2;
-          const seatsOnBottomSide = Math.min(perSide, numSeats - perSide * 2);
-          const progress = seatsOnBottomSide > 1 ? seatOnSide / (seatsOnBottomSide - 1) : 0.5;
-          x = 85 - progress * 70;
-          y = 90;
-        } else {
-          // Left side (bottom to top)
-          const seatOnSide = i - perSide * 3;
-          const seatsOnLeftSide = numSeats - perSide * 3;
-          const progress = seatsOnLeftSide > 1 ? seatOnSide / (seatsOnLeftSide - 1) : 0.5;
-          x = 10;
-          y = 80 - progress * 60;
-        }
+        // Bottom: 2 players
+        positions.push({ x: 70, y: 90 });
+        positions.push({ x: 30, y: 90 });
 
-        positions.push({ x, y });
+        // Left: 1 player
+        positions.push({ x: 10, y: 50 });
+
+        return positions;
+      }
+
+      // For other numbers: max 2 players per side
+      // Determine distribution
+      let distribution = [];
+
+      if (numSeats <= 2) {
+        // 1-2 players: top only
+        distribution = [numSeats, 0, 0, 0];
+      } else if (numSeats === 3) {
+        // 3 players: 2 top, 1 bottom
+        distribution = [2, 0, 1, 0];
+      } else if (numSeats === 4) {
+        // 4 players: 1 on each side
+        distribution = [1, 1, 1, 1];
+      } else if (numSeats === 5) {
+        // 5 players: 2 top, 1 right, 2 bottom
+        distribution = [2, 1, 2, 0];
+      } else if (numSeats === 6) {
+        // 6 players: 2 top, 1 right, 2 bottom, 1 left
+        distribution = [2, 1, 2, 1];
+      } else {
+        // 8+ players: 2 on each side (max 8)
+        distribution = [2, 2, 2, 2];
+      }
+
+      const [top, right, bottom, left] = distribution;
+
+      // Top side (left to right)
+      for (let i = 0; i < top; i++) {
+        const x = top === 1 ? 50 : (top === 2 ? [30, 70][i] : 50);
+        positions.push({ x, y: 10 });
+      }
+
+      // Right side (top to bottom)
+      for (let i = 0; i < right; i++) {
+        const y = right === 1 ? 50 : (right === 2 ? [35, 65][i] : 50);
+        positions.push({ x: 90, y });
+      }
+
+      // Bottom side (right to left)
+      for (let i = 0; i < bottom; i++) {
+        const x = bottom === 1 ? 50 : (bottom === 2 ? [70, 30][i] : 50);
+        positions.push({ x, y: 90 });
+      }
+
+      // Left side (bottom to top)
+      for (let i = 0; i < left; i++) {
+        const y = left === 1 ? 50 : (left === 2 ? [65, 35][i] : 50);
+        positions.push({ x: 10, y });
       }
 
       return positions;
