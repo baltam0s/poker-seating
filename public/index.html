@@ -1618,7 +1618,7 @@
           const players = Array.isArray(game.players) ? game.players.join(', ') : 'Unknown players';
           const winner = game.winner ? `<div class="history-winner">🏆 Winner: ${game.winner}</div>` : '<div style="color: #999; font-size: 0.9em;">No winner recorded</div>';
 
-          // Show admin actions if logged in as admin
+          // Show admin actions ONLY if logged in as admin
           const adminActions = isAdmin ? `
             <div class="history-actions">
               <button class="btn-danger action-btn" onclick="editGame(${game.id})">Edit</button>

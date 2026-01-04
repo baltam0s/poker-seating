@@ -274,23 +274,43 @@ app.get("/api/stats", (_, res) => {
   );
 });
 
-app.get("/api/history", (_, res) => {
+app.get("/api/history", (req, res) => {
   db.all(
     "SELECT id, created_at, players, winner FROM games ORDER BY id DESC LIMIT 20",
     [],
     (err, rows) => {
       if (err) {
-        return res.status(500).json({ error: "Failed to load history" });
+        console.error('Database error in /api/history:', err);
+        return res.status(500).json({ error: "Failed to load history", details: err.message });
       }
 
-      res.json(
-        rows.map(r => ({
-          id: r.id,
-          created_at: r.created_at,
-          players: JSON.parse(r.players),
-          winner: r.winner
-        }))
-      );
+      if (!rows) {
+        return res.json([]);
+      }
+
+      try {
+        const games = rows.map(r => {
+          let parsedPlayers;
+          try {
+            parsedPlayers = JSON.parse(r.players);
+          } catch (parseError) {
+            console.error('Error parsing players for game', r.id, ':', parseError);
+            parsedPlayers = [];
+          }
+
+          return {
+            id: r.id,
+            created_at: r.created_at,
+            players: parsedPlayers,
+            winner: r.winner
+          };
+        });
+
+        res.json(games);
+      } catch (error) {
+        console.error('Error processing history:', error);
+        res.status(500).json({ error: "Failed to process history", details: error.message });
+      }
     }
   );
 });
