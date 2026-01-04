@@ -34,6 +34,13 @@
       color: white;
       margin-bottom: 30px;
       position: relative;
+      padding-top: 40px;
+    }
+
+    @media (min-width: 768px) {
+      .header {
+        padding-top: 0;
+      }
     }
 
     .header h1 {
@@ -58,30 +65,35 @@
     }
 
     .admin-toggle {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 2px solid white;
-      padding: 6px 12px;
-      border-radius: 6px;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #667eea;
+      border: 2px solid #667eea;
+      padding: 8px 16px;
+      border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.85em;
+      font-size: 0.9em;
       transition: all 0.2s;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-toggle:hover {
+      background: #667eea;
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
     }
 
     @media (min-width: 768px) {
       .admin-toggle {
-        padding: 8px 16px;
-        border-radius: 8px;
+        top: 20px;
+        left: 20px;
         font-size: 1em;
       }
-    }
-
-    .admin-toggle:hover {
-      background: rgba(255, 255, 255, 0.3);
     }
 
     .main-content {
@@ -874,18 +886,18 @@
       display: inline-block;
       background: #ffc107;
       color: #333;
-      padding: 3px 6px;
+      padding: 2px 6px;
       border-radius: 4px;
-      font-size: 0.65em;
+      font-size: 0.7em;
       font-weight: bold;
       margin-left: 6px;
+      vertical-align: middle;
     }
 
     @media (min-width: 768px) {
       .admin-badge {
-        padding: 4px 8px;
+        padding: 3px 8px;
         font-size: 0.75em;
-        margin-left: 10px;
       }
     }
 
@@ -1407,7 +1419,9 @@
     // Admin functions
     function toggleAdminLogin() {
       if (isAdmin) {
-        logout();
+        if (confirm('Are you sure you want to logout from admin mode?')) {
+          logout();
+        }
       } else {
         document.getElementById('adminModal').classList.add('show');
       }
@@ -1483,9 +1497,9 @@
     function updateAdminUI() {
       const btnText = document.getElementById('adminBtnText');
       if (isAdmin) {
-        btnText.innerHTML = 'Logout <span class="admin-badge">ADMIN</span>';
+        btnText.innerHTML = '🔓 Admin<span class="admin-badge">ACTIVE</span>';
       } else {
-        btnText.textContent = 'Admin Login';
+        btnText.innerHTML = '🔐 Admin';
       }
     }
 
@@ -1588,7 +1602,9 @@
         historyDiv.innerHTML = games.map(game => {
           const date = new Date(game.created_at).toLocaleString();
           const players = game.players.join(', ');
-          const winner = game.winner ? `<div class="history-winner">🏆 Winner: ${game.winner}</div>` : '';
+          const winner = game.winner ? `<div class="history-winner">🏆 Winner: ${game.winner}</div>` : '<div style="color: #999; font-size: 0.9em;">No winner recorded</div>';
+
+          // Show admin actions if logged in as admin
           const adminActions = isAdmin ? `
             <div class="history-actions">
               <button class="btn-danger action-btn" onclick="editGame(${game.id})">Edit</button>
@@ -1599,7 +1615,7 @@
           return `
             <div class="history-item">
               <div class="history-date">${date}</div>
-              <div class="history-players">${players}</div>
+              <div class="history-players"><strong>Players:</strong> ${players}</div>
               ${winner}
               ${adminActions}
             </div>
@@ -1608,6 +1624,8 @@
 
       } catch (error) {
         console.error('Failed to load history:', error);
+        const historyDiv = document.getElementById('history');
+        historyDiv.innerHTML = '<p style="color: #dc3545;">Error loading game history. Please try again.</p>';
       }
     }
 
