@@ -1,6 +1,13 @@
-** Vibe-coded **
+### Vibe-coded
 
-# 🎰 Poker Seating Generator
+### Admin Config Table
+```sql
+CREATE TABLE admin_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+```
+Stores admin password hash securely (SHA-256).# 🎰 Poker Seating Generator
 
 A web application for managing poker game seating arrangements, tracking tournament progress, and maintaining player statistics. Built for serious poker nights with friends!
 
@@ -62,14 +69,8 @@ let predefinedPlayers = [
 ```
 Replace with your players' names.
 
-3. **Configure admin password** (Optional)
-Edit `docker-compose.yml` and add:
-```yaml
-environment:
-  - ADMIN_PASSWORD=YourSecurePassword123
-  - PORT=3000
-```
-Default password is `poker2025`
+3. **~~Configure admin password~~** ~~(Optional)~~
+   **No configuration needed!** On first access, you'll be prompted to create a secure admin password. The password is hashed and stored securely in the database.
 
 4. **Build and run**
 ```bash
@@ -108,10 +109,12 @@ poker-seating/
 
 ### For Admins
 
-1. **Login**: Click the 🔐 Admin button (top-left) and enter password
-2. **Edit games**: Go to Game History tab, hover over a game, click "Edit"
-3. **Delete games**: Click "Delete" to remove games (stats auto-recalculate)
-4. **Logout**: Click the 🔓 Admin button and confirm
+1. **First-time setup**: On first access, click 🔐 Admin button and create your admin password (min. 6 characters)
+2. **Login**: After setup, click 🔐 Admin and enter your password
+3. **Edit games**: Go to Game History tab, hover over a game, click "Edit"
+4. **Delete games**: Click "Delete" to remove games (stats auto-recalculate)
+5. **Change password**: (Feature available - access via settings)
+6. **Logout**: Click the 🔓 Admin button and confirm
 
 ## ⚙️ Configuration
 
@@ -120,8 +123,9 @@ poker-seating/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Internal container port |
-| `ADMIN_PASSWORD` | `poker2025` | Admin panel password |
 | `NODE_ENV` | `production` | Node environment |
+
+**Note**: Admin password is securely stored in the database (SHA-256 hashed) after first-time setup. No environment variables needed!
 
 ### Docker Ports
 
@@ -177,13 +181,23 @@ CREATE TABLE player_stats (
 );
 ```
 
-## 🔒 Security Notes
+## 🔒 Security Features
 
-- Admin password is stored in environment variables
-- Tokens expire after 24 hours
-- Use HTTPS/Cloudflare Tunnel for production
-- Change default admin password immediately
-- No sensitive data is stored (just game records)
+- **First-time setup**: Create admin password on first use
+- **Password hashing**: SHA-256 hashed passwords stored in database
+- **No default passwords**: Each installation requires unique password creation
+- **Token-based auth**: Secure session tokens that expire after 24 hours
+- **Password change**: Admins can change password at any time
+- **Use HTTPS**: Deploy with Cloudflare Tunnel or reverse proxy for encryption
+- **No sensitive data**: Only game records and player names stored
+
+### Security Best Practices
+
+1. **Choose a strong password**: Use at least 8-12 characters with mixed case, numbers, and symbols
+2. **Don't share admin credentials**: Keep admin access limited to trusted individuals
+3. **Use HTTPS in production**: Never transmit passwords over unencrypted HTTP
+4. **Regular backups**: Backup the Docker volume containing your database
+5. **Monitor access**: Check Docker logs for suspicious activity
 
 ## 🐛 Troubleshooting
 
