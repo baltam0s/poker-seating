@@ -452,8 +452,8 @@
               <th>2nd</th>
               <th>3rd</th>
               <th>Players</th>
-              ${state.isAdmin ? '<th>Action</th>' : ''}
             </tr>
+          </thead>
           </thead>
           <tbody></tbody>
         </table>
@@ -765,6 +765,21 @@
     async function loadHistory() {
       const res = await fetch('/api/history');
       const data = await res.json();
+
+      // Update Header
+      const theadRow = document.querySelector('#historyTable thead tr');
+      if (state.isAdmin) {
+        if (!theadRow.querySelector('.action-col')) {
+          const th = document.createElement('th');
+          th.className = 'action-col';
+          th.textContent = 'Action';
+          theadRow.appendChild(th);
+        }
+      } else {
+        const th = theadRow.querySelector('.action-col');
+        if (th) th.remove();
+      }
+
       const tbody = document.querySelector('#historyTable tbody');
       tbody.innerHTML = data.map(g => {
         const date = new Date(g.created_at).toLocaleDateString();
