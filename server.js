@@ -25,7 +25,9 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       players TEXT NOT NULL,
       seating_hash TEXT UNIQUE NOT NULL,
-      winner TEXT
+      winner TEXT,
+      second_place TEXT,
+      third_place TEXT
     )
   `, (err) => {
     if (err) console.error('Error creating games table:', err);
@@ -66,14 +68,30 @@ db.serialize(() => {
 
       if (columns) {
         const hasWinner = columns.some(col => col.name === 'winner');
+        const hasSecondPlace = columns.some(col => col.name === 'second_place');
+        const hasThirdPlace = columns.some(col => col.name === 'third_place');
+
         if (!hasWinner) {
           console.log('Adding winner column to existing database...');
           db.run(`ALTER TABLE games ADD COLUMN winner TEXT`, (err) => {
-            if (err) {
-              console.error('Error adding winner column:', err);
-            } else {
-              console.log('Winner column added successfully');
-            }
+            if (err) console.error('Error adding winner column:', err);
+            else console.log('Winner column added successfully');
+          });
+        }
+
+        if (!hasSecondPlace) {
+          console.log('Adding second_place column to existing database...');
+          db.run(`ALTER TABLE games ADD COLUMN second_place TEXT`, (err) => {
+            if (err) console.error('Error adding second_place column:', err);
+            else console.log('Second place column added successfully');
+          });
+        }
+
+        if (!hasThirdPlace) {
+          console.log('Adding third_place column to existing database...');
+          db.run(`ALTER TABLE games ADD COLUMN third_place TEXT`, (err) => {
+            if (err) console.error('Error adding third_place column:', err);
+            else console.log('Third place column added successfully');
           });
         }
       }
@@ -263,11 +281,11 @@ app.post("/api/generate", async (req, res) => {
   res.status(409).json({ error: "Could not generate unique seating after 50 attempts" });
 });
 
-app.post("/api/winner", async (req, res) => {
-  const { gameId, winner } = req.body;
+app.post("/api/results", async (req, res) => {
+  const { gameId, first, second, third } = req.body;
 
-  if (!gameId || !winner) {
-    return res.status(400).json({ error: "Missing gameId or winner" });
+  if (!gameId || !first) {
+    return res.status(400).json({ error: "Missing gameId or first place winner" });
   }
 
   try {
@@ -289,15 +307,22 @@ app.post("/api/winner", async (req, res) => {
 
     const players = JSON.parse(game.players);
 
-    if (!players.includes(winner)) {
-      return res.status(400).json({ error: "Winner not in game" });
+    // Validate all placements are in the game
+    if (!players.includes(first)) {
+      return res.status(400).json({ error: "First place not in game" });
+    }
+    if (second && !players.includes(second)) {
+      return res.status(400).json({ error: "Second place not in game" });
+    }
+    if (third && !players.includes(third)) {
+      return res.status(400).json({ error: "Third place not in game" });
     }
 
-    // Update game with winner
+    // Update game with placements
     await new Promise((resolve, reject) => {
       db.run(
-        "UPDATE games SET winner = ? WHERE id = ?",
-        [winner, gameId],
+        "UPDATE games SET winner = ?, second_place = ?, third_place = ? WHERE id = ?",
+        [first, second || null, third || null, gameId],
         (err) => {
           if (err) reject(err);
           else resolve();
@@ -309,7 +334,7 @@ app.post("/api/winner", async (req, res) => {
     await new Promise((resolve, reject) => {
       db.run(
         `UPDATE player_stats SET wins = wins + 1 WHERE player = ?`,
-        [winner],
+        [first],
         (err) => {
           if (err) reject(err);
           else resolve();
@@ -320,8 +345,8 @@ app.post("/api/winner", async (req, res) => {
     res.json({ success: true });
 
   } catch (error) {
-    console.error('Error recording winner:', error);
-    res.status(500).json({ error: "Failed to record winner" });
+    console.error('Error recording results:', error);
+    res.status(500).json({ error: "Failed to record results" });
   }
 });
 
@@ -350,7 +375,7 @@ app.get("/api/stats", (_, res) => {
 
 app.get("/api/history", (req, res) => {
   db.all(
-    "SELECT id, created_at, players, winner FROM games ORDER BY id DESC LIMIT 20",
+    "SELECT id, created_at, players, winner, second_place, third_place FROM games ORDER BY id DESC LIMIT 20",
     [],
     (err, rows) => {
       if (err) {
@@ -376,7 +401,9 @@ app.get("/api/history", (req, res) => {
             id: r.id,
             created_at: r.created_at,
             players: parsedPlayers,
-            winner: r.winner
+            winner: r.winner,
+            second_place: r.second_place,
+            third_place: r.third_place
           };
         });
 
