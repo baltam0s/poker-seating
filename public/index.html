@@ -55,32 +55,45 @@
       margin-bottom: 8px;
     }
 
-    .admin-toggle {
+    .admin-toggle,
+    .dark-mode-toggle {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--primary);
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
+      left: 15px;
+      background: var(--card-light);
+      color: var(--text-light);
+      border: 2px solid var(--primary);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 10px 15px;
+      border-radius: 10px;
       cursor: pointer;
       font-weight: bold;
+      z-index: 10;
+      transition: all 0.2s ease;
+    }
+
+    body.dark-mode .admin-toggle,
+    body.dark-mode .dark-mode-toggle {
+      background: var(--card-dark);
+      color: var(--text-dark);
+      border-color: #ffd700;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .admin-toggle:hover,
+    .dark-mode-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .admin-toggle {
+      top: 15px;
     }
 
     .dark-mode-toggle {
-      position: absolute;
-      top: 50px;
-      left: 10px;
-      /* Moved below admin toggle */
-      background: rgba(255, 255, 255, 0.9);
-      padding: 8px;
-      border-radius: 8px;
-      cursor: pointer;
+      top: 65px;
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.9em;
     }
 
     .main-content {
