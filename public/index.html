@@ -782,7 +782,7 @@
 
       const tbody = document.querySelector('#historyTable tbody');
       tbody.innerHTML = data.map(g => {
-        const date = new Date(g.created_at).toLocaleDateString();
+        const date = new Date(g.created_at).toLocaleDateString('en-GB');
         const pList = g.players.join(', ');
         const deleteBtn = state.isAdmin ? `<td><button onclick="deleteGame(${g.id})" style="background:#e53e3e;padding:5px 10px;width:auto;font-size:0.8em">Del</button></td>` : '';
         return `<tr>
