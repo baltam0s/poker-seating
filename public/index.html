@@ -451,6 +451,7 @@
               <th>2nd</th>
               <th>3rd</th>
               <th>Players</th>
+              ${state.isAdmin ? '<th>Action</th>' : ''}
             </tr>
           </thead>
           <tbody></tbody>
@@ -609,8 +610,30 @@
       document.getElementById('winner3').innerHTML = `<option value="">-- None --</option>` + opts;
     }
 
-    function cancelGame() {
-      if (!confirm("Cancel this game? It won't be saved.")) return;
+    async function cancelGame() {
+      if (!confirm("Cancel this game? It will be deleted permanently.")) return;
+
+      if (state.gameId) {
+        if (state.isAdmin) {
+          await deleteGame(state.gameId);
+        } else {
+          // Non-admins can't "delete" from DB via admin API, 
+          // but if the game is active (no winner), we might need a way to void it.
+          // For now, if we are strictly locking, maybe ONLY admins can cancel?
+          // Or we add a public /api/cancel endpoint. 
+          // Given the request, let's assume we want to clear it.
+          // For this iteration, let's try to delete it if we have the ID, 
+          // but we need an auth token.
+          // If not admin, we might be stuck. 
+          // Let's rely on the previous logic but also try to clear server state if possible.
+          // Actually, the best way is to let anyone cancel the active game if they are the "owner"
+          // but we don't track owner.
+          // Let's alert the user they need admin to delete a server-tracked game.
+          if (!state.isAdmin) {
+            alert("Only admins can fully delete a tracked game from the server. This will only clear your local view.");
+          }
+        }
+      }
       endGameCleanup();
     }
 
@@ -746,14 +769,43 @@
       tbody.innerHTML = data.map(g => {
         const date = new Date(g.created_at).toLocaleDateString();
         const pList = g.players.join(', ');
+        const deleteBtn = state.isAdmin ? `<td><button onclick="deleteGame(${g.id})" style="background:#e53e3e;padding:5px 10px;width:auto;font-size:0.8em">Del</button></td>` : '';
         return `<tr>
                     <td>${date}</td>
                     <td style="color:#28a745;font-weight:bold">${g.winner || '-'}</td>
                     <td>${g.second_place || '-'}</td>
                     <td>${g.third_place || '-'}</td>
                     <td style="font-size:0.8em;color:#666">${pList}</td>
+                    ${deleteBtn}
                 </tr>`;
-      }).join('') || '<tr><td colspan="5">No history yet</td></tr>';
+      }).join('') || `<tr><td colspan="${state.isAdmin ? 6 : 5}">No history yet</td></tr>`;
+    }
+
+    async function deleteGame(id) {
+      if (!confirm("Start deletion? This cannot be undone.")) return;
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`/api/admin/game/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          // If the deleted game was the active one, clear local state
+          if (state.gameId === id) {
+            endGameCleanup();
+          }
+          loadStats();
+          loadHistory();
+          alert("Game deleted.");
+        } else {
+          alert("Failed to delete. URL might be wrong or unauthorized.");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error deleting game");
+      }
     }
 
     function setTab(name) {
@@ -791,6 +843,7 @@
         localStorage.setItem('adminToken', d.token);
         state.isAdmin = true;
         document.getElementById('adminModal').classList.remove('show');
+        loadHistory(); // Reload history to show delete buttons
         alert("Logged in");
       } else {
         alert(d.error || 'Login failed');
