@@ -69,8 +69,9 @@
 
     .dark-mode-toggle {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 50px;
+      left: 10px;
+      /* Moved below admin toggle */
       background: rgba(255, 255, 255, 0.9);
       padding: 8px;
       border-radius: 8px;
@@ -78,6 +79,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      font-size: 0.9em;
     }
 
     .main-content {
@@ -490,12 +492,30 @@
       loadStats();
       loadHistory();
 
-      // Check if there's a cached active game (simple recovery)
-      const cachedGame = JSON.parse(localStorage.getItem('activeGame') || 'null');
-      if (cachedGame) {
-        restoreGame(cachedGame);
-      }
+      // Check for server-side active game
+      checkForActiveGame();
     });
+
+    async function checkForActiveGame() {
+      try {
+        const res = await fetch('/api/active-game');
+        const activeGame = await res.json();
+
+        if (activeGame) {
+          restoreGame(activeGame);
+        } else {
+          // Legacy/Fallback: Check local storage logic or clear it
+          // Actually, if server says no game, we should trust it and clear local state if inconsistent
+          const localGame = JSON.parse(localStorage.getItem('activeGame') || 'null');
+          if (localGame && state.gameId !== localGame.gameId) {
+            // Mismatch or stale local data
+            localStorage.removeItem('activeGame');
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check active game:", e);
+      }
+    }
 
     // --- CORE LOGIC ---
 
@@ -563,7 +583,7 @@
     }
 
     function restoreGame(gameData) {
-      state.gameId = gameData.gameId;
+      state.gameId = gameData.id || gameData.gameId; // Handle both formats
       state.activePlayers = gameData.seating;
       state.isGameActive = true;
       state.eliminated = new Set(); // Loss of elimination state on refresh is acceptable for now

@@ -237,11 +237,61 @@ function recalculateStats() {
 }
 
 // API Routes
+app.get("/api/active-game", (req, res) => {
+  db.get(
+    "SELECT id, players, seating_hash FROM games WHERE winner IS NULL ORDER BY id DESC LIMIT 1",
+    [],
+    (err, row) => {
+      if (err) {
+        console.error('Error checking active game:', err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      if (row) {
+        // Found an active game
+        try {
+          const gameData = {
+            id: row.id,
+            seating: JSON.parse(row.players) // Note: The database stores 'players' as the ordered seating
+          };
+          res.json(gameData);
+        } catch (parseError) {
+          console.error('Error parsing active game players:', parseError);
+          res.json(null);
+        }
+      } else {
+        res.json(null);
+      }
+    }
+  );
+});
+
 app.post("/api/generate", async (req, res) => {
   const players = req.body.players;
 
   if (!Array.isArray(players) || players.length < 2) {
     return res.status(400).json({ error: "Invalid players list" });
+  }
+
+  // Check for existing active game
+  try {
+    const hasActive = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT 1 FROM games WHERE winner IS NULL",
+        [],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(!!row);
+        }
+      );
+    });
+
+    if (hasActive) {
+      return res.status(409).json({ error: "A game is already in progress! Finish it first." });
+    }
+  } catch (error) {
+    console.error('Error checking active games:', error);
+    return res.status(500).json({ error: "Server error checking active games" });
   }
 
   let attempts = 0;
@@ -264,7 +314,7 @@ app.post("/api/generate", async (req, res) => {
         db.run(
           "INSERT INTO games (players, seating_hash) VALUES (?, ?)",
           [JSON.stringify(seating), hash],
-          function(err) {
+          function (err) {
             if (err) reject(err);
             else resolve(this.lastID);
           }
