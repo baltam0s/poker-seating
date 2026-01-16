@@ -43,57 +43,46 @@
     }
 
     .header {
-      text-align: center;
-      color: white;
-      margin-bottom: 30px;
-      padding-top: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 20px;
+      margin-bottom: 20px;
       position: relative;
     }
 
     .header h1 {
-      font-size: 1.8em;
-      margin-bottom: 8px;
+      font-size: 1.5em;
+      margin: 0;
+      flex-grow: 1;
+      text-align: center;
     }
 
-    .admin-toggle,
-    .dark-mode-toggle {
-      position: absolute;
-      left: 15px;
+    .icon-btn {
       background: var(--card-light);
       color: var(--text-light);
       border: 2px solid var(--primary);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      padding: 10px 15px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      font-weight: bold;
+      font-size: 1.2em;
+      transition: all 0.2s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       z-index: 10;
-      transition: all 0.2s ease;
     }
 
-    body.dark-mode .admin-toggle,
-    body.dark-mode .dark-mode-toggle {
+    body.dark-mode .icon-btn {
       background: var(--card-dark);
       color: var(--text-dark);
       border-color: #ffd700;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     }
 
-    .admin-toggle:hover,
-    .dark-mode-toggle:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .admin-toggle {
-      top: 15px;
-    }
-
-    .dark-mode-toggle {
-      top: 65px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .icon-btn:hover {
+      transform: scale(1.1);
     }
 
     .main-content {
@@ -386,9 +375,9 @@
 <body>
   <div class="container">
     <div class="header">
+      <button class="icon-btn" onclick="toggleTheme()" title="Toggle Theme">🌙</button>
       <h1>🎰 Poker Seating</h1>
-      <button class="admin-toggle" onclick="toggleAdmin()">⚙️ Admin</button>
-      <div class="dark-mode-toggle" onclick="toggleTheme()">🌙</div>
+      <button class="icon-btn" onclick="toggleAdmin()" title="Admin Settings">⚙️</button>
     </div>
 
     <div class="main-content">
