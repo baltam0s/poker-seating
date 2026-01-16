@@ -102,7 +102,17 @@ db.serialize(() => {
       if (err) return;
       if (columns && !columns.some(col => col.name === 'top3')) {
         console.log('Adding top3 column to player_stats...');
-        db.run(`ALTER TABLE player_stats ADD COLUMN top3 INTEGER DEFAULT 0`);
+        db.run(`ALTER TABLE player_stats ADD COLUMN top3 INTEGER DEFAULT 0`, async (err) => {
+          if (!err) {
+            // If we just added the column, we should recalculate stats to fill it
+            console.log("Recalculating stats for new schema...");
+            await recalculateStats();
+          }
+        });
+      } else {
+        // Always recalculate on startup to ensure consistency for now (fixes 0 stats issue)
+        console.log("Ensuring stats consistency...");
+        recalculateStats();
       }
     });
 
@@ -399,14 +409,33 @@ app.post("/api/results", async (req, res) => {
     // Update winner's stats
     await new Promise((resolve, reject) => {
       db.run(
-        `UPDATE player_stats SET wins = wins + 1 WHERE player = ?`,
+        `UPDATE player_stats SET wins = wins + 1, top3 = top3 + 1 WHERE player = ?`,
         [first],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
+        (err) => err ? reject(err) : resolve()
       );
     });
+
+    // Update 2nd place stats
+    if (second) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE player_stats SET top3 = top3 + 1 WHERE player = ?`,
+          [second],
+          (err) => err ? reject(err) : resolve()
+        );
+      });
+    }
+
+    // Update 3rd place stats
+    if (third) {
+      await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE player_stats SET top3 = top3 + 1 WHERE player = ?`,
+          [third],
+          (err) => err ? reject(err) : resolve()
+        );
+      });
+    }
 
     res.json({ success: true });
 

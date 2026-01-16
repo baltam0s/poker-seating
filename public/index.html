@@ -516,6 +516,20 @@
 
     // --- INIT ---
     window.addEventListener('DOMContentLoaded', () => {
+      // Expose functions to global scope for HTML onclick access
+      window.editGame = editGame;
+      window.deleteGame = deleteGame;
+      window.saveEdit = saveEdit;
+      window.toggleElimination = toggleElimination;
+      window.handlePlayerInput = handlePlayerInput;
+      window.generateSeating = generateSeating;
+      window.submitResults = submitResults;
+      window.cancelGame = cancelGame;
+      window.toggleAdmin = toggleAdmin;
+      window.adminLogin = adminLogin;
+      window.toggleTheme = toggleTheme;
+      window.setTab = setTab;
+
       if (state.players.length === 0) {
         state.players = ['Dime', 'Lazić', 'Peđa', 'Đovani', 'Bane', 'Miha', 'Šegi'];
       }
