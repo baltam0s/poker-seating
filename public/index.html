@@ -219,8 +219,23 @@
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       border: 2px solid var(--primary);
       text-align: center;
-      min-width: 80px;
+      min-width: 60px;
+      /* Reduced from 80 */
+      font-size: 0.9em;
       color: #333;
+    }
+
+    @media (max-width: 600px) {
+      .seat {
+        padding: 2px 5px;
+        min-width: auto;
+        font-size: 0.75em;
+      }
+
+      .poker-table {
+        border-width: 8px;
+        height: 250px;
+      }
     }
 
     .seat.eliminated {
@@ -451,6 +466,8 @@
               <th>Games</th>
               <th>Wins</th>
               <th>Win %</th>
+              <th>Top 3</th>
+              <th>Top 3 %</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -771,8 +788,15 @@
       const data = await res.json();
       const tbody = document.querySelector('#statsTable tbody');
       tbody.innerHTML = data.map(r => `
-                <tr><td>${r.player}</td><td>${r.gamesPlayed}</td><td>${r.wins}</td><td>${r.winRate}%</td></tr>
-            `).join('') || '<tr><td colspan="4">No stats yet</td></tr>';
+                <tr>
+                    <td>${r.player}</td>
+                    <td>${r.gamesPlayed}</td>
+                    <td>${r.wins}</td>
+                    <td>${r.winRate}%</td>
+                    <td>${r.top3}</td>
+                    <td>${r.top3Rate}%</td>
+                </tr>
+            `).join('') || '<tr><td colspan="6">No stats yet</td></tr>';
     }
 
     async function loadHistory() {
@@ -797,7 +821,12 @@
       tbody.innerHTML = data.map(g => {
         const date = new Date(g.created_at).toLocaleDateString('en-GB');
         const pList = g.players.join(', ');
-        const deleteBtn = state.isAdmin ? `<td><button onclick="deleteGame(${g.id})" style="background:#e53e3e;padding:5px 10px;width:auto;font-size:0.8em">Del</button></td>` : '';
+        const deleteBtn = state.isAdmin
+          ? `<td>
+                 <button onclick="editGame(${g.id}, '${escapeHtml(JSON.stringify(g))}')" style="background:#f39c12;padding:5px 10px;width:auto;font-size:0.8em;margin-right:5px">Edit</button>
+                 <button onclick="deleteGame(${g.id})" style="background:#e53e3e;padding:5px 10px;width:auto;font-size:0.8em">Del</button>
+               </td>`
+          : '';
         return `<tr>
                     <td>${date}</td>
                     <td style="color:#28a745;font-weight:bold">${g.winner || '-'}</td>
@@ -807,6 +836,86 @@
                     ${deleteBtn}
                 </tr>`;
       }).join('') || `<tr><td colspan="${state.isAdmin ? 6 : 5}">No history yet</td></tr>`;
+    }
+
+    // HTML Escape helper to prevent breakage in onclick
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function editGame(id, gameJson) {
+      // Need to decode back because we passed escaped string
+      const t = document.createElement('textarea');
+      t.innerHTML = gameJson;
+      const game = JSON.parse(t.value);
+
+      document.getElementById('editGameId').value = id;
+
+      // Populate dropdowns with players from that game
+      const players = game.players;
+      const opts = players.map(p => `<option value="${p}">${p}</option>`).join('');
+
+      const wSelect = document.getElementById('editWinner');
+      const sSelect = document.getElementById('editSecond');
+      const tSelect = document.getElementById('editThird');
+
+      wSelect.innerHTML = `<option value="">-- Select --</option>` + opts;
+      sSelect.innerHTML = `<option value="">-- None --</option>` + opts;
+      tSelect.innerHTML = `<option value="">-- None --</option>` + opts;
+
+      wSelect.value = game.winner || '';
+      sSelect.value = game.second_place || '';
+      tSelect.value = game.third_place || '';
+
+      document.getElementById('editGameModal').classList.add('show');
+    }
+
+    async function saveEdit() {
+      const id = document.getElementById('editGameId').value;
+      const first = document.getElementById('editWinner').value;
+      const second = document.getElementById('editSecond').value;
+      const third = document.getElementById('editThird').value;
+
+      if (!first && !second && !third) return alert("Nothing to save?");
+
+      // Validation: unique places
+      if (first && (first === second || first === third)) return alert("One player cannot hold multiple places");
+      if (second && second === third) return alert("One player cannot hold multiple places");
+
+      try {
+        const token = localStorage.getItem('adminToken');
+        const res = await fetch(`/api/admin/game/${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            winner: first || null,
+            second_place: second || null,
+            third_place: third || null
+          })
+        });
+
+        if (!res.ok) {
+          const d = await res.json();
+          throw new Error(d.error || "Update failed");
+        }
+
+        alert("Game updated!");
+        document.getElementById('editGameModal').classList.remove('show');
+        loadStats();
+        loadHistory();
+
+      } catch (e) {
+        alert(e.message);
+      }
     }
 
     async function deleteGame(id) {

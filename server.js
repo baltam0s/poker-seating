@@ -96,6 +96,16 @@ db.serialize(() => {
         }
       }
     });
+
+    // Check player_stats for top3 column
+    db.all(`PRAGMA table_info(player_stats)`, [], (err, columns) => {
+      if (err) return;
+      if (columns && !columns.some(col => col.name === 'top3')) {
+        console.log('Adding top3 column to player_stats...');
+        db.run(`ALTER TABLE player_stats ADD COLUMN top3 INTEGER DEFAULT 0`);
+      }
+    });
+
   }, 100);
 });
 
@@ -197,7 +207,7 @@ function recalculateStats() {
         }
 
         // Recalculate from games
-        db.all('SELECT players, winner FROM games', [], (err, games) => {
+        db.all('SELECT players, winner, second_place, third_place FROM games', [], (err, games) => {
           if (err) {
             reject(err);
             return;
@@ -206,14 +216,20 @@ function recalculateStats() {
           const stats = {};
 
           games.forEach(game => {
-            const players = JSON.parse(game.players);
+            let players = [];
+            try { players = JSON.parse(game.players); } catch (e) { }
+
             players.forEach(player => {
               if (!stats[player]) {
-                stats[player] = { games: 0, wins: 0 };
+                stats[player] = { games: 0, wins: 0, top3: 0 };
               }
               stats[player].games++;
+
               if (game.winner === player) {
                 stats[player].wins++;
+                stats[player].top3++;
+              } else if (game.second_place === player || game.third_place === player) {
+                stats[player].top3++;
               }
             });
           });
@@ -222,8 +238,8 @@ function recalculateStats() {
           const insertPromises = Object.entries(stats).map(([player, stat]) => {
             return new Promise((res, rej) => {
               db.run(
-                'INSERT INTO player_stats (player, games_played, wins) VALUES (?, ?, ?)',
-                [player, stat.games, stat.wins],
+                'INSERT INTO player_stats (player, games_played, wins, top3) VALUES (?, ?, ?, ?)',
+                [player, stat.games, stat.wins, stat.top3],
                 (err) => err ? rej(err) : res()
               );
             });
@@ -402,7 +418,7 @@ app.post("/api/results", async (req, res) => {
 
 app.get("/api/stats", (_, res) => {
   db.all(
-    "SELECT player, games_played, wins FROM player_stats ORDER BY wins DESC, games_played DESC",
+    "SELECT player, games_played, wins, top3 FROM player_stats ORDER BY wins DESC, top3 DESC, games_played DESC",
     [],
     (err, rows) => {
       if (err) {
@@ -413,8 +429,12 @@ app.get("/api/stats", (_, res) => {
         player: row.player,
         gamesPlayed: row.games_played,
         wins: row.wins,
+        top3: row.top3 || 0,
         winRate: row.games_played > 0
           ? Math.round((row.wins / row.games_played) * 100)
+          : 0,
+        top3Rate: row.games_played > 0
+          ? Math.round(((row.top3 || 0) / row.games_played) * 100)
           : 0
       }));
 
@@ -597,7 +617,7 @@ app.delete("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
 
 app.patch("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
   const gameId = req.params.id;
-  const { winner } = req.body;
+  const { winner, second_place, third_place } = req.body;
 
   try {
     // Get game to verify it exists
@@ -614,25 +634,34 @@ app.patch("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
 
     const players = JSON.parse(game.players);
 
-    // Validate winner if provided
-    if (winner && !players.includes(winner)) {
-      return res.status(400).json({ error: "Winner not in game" });
+    // Validate placements if provided
+    if (winner && !players.includes(winner)) return res.status(400).json({ error: "Winner not in game" });
+    if (second_place && !players.includes(second_place)) return res.status(400).json({ error: "2nd place not in game" });
+    if (third_place && !players.includes(third_place)) return res.status(400).json({ error: "3rd place not in game" });
+
+    // Build update query dynamically
+    let updateFields = [];
+    let updateValues = [];
+
+    if (winner !== undefined) { updateFields.push("winner = ?"); updateValues.push(winner || null); }
+    if (second_place !== undefined) { updateFields.push("second_place = ?"); updateValues.push(second_place || null); }
+    if (third_place !== undefined) { updateFields.push("third_place = ?"); updateValues.push(third_place || null); }
+
+    if (updateFields.length > 0) {
+      updateValues.push(gameId);
+      await new Promise((resolve, reject) => {
+        db.run(
+          `UPDATE games SET ${updateFields.join(", ")} WHERE id = ?`,
+          updateValues,
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+      // Recalculate all player stats
+      await recalculateStats();
     }
-
-    // Update game
-    await new Promise((resolve, reject) => {
-      db.run(
-        "UPDATE games SET winner = ? WHERE id = ?",
-        [winner || null, gameId],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
-
-    // Recalculate all player stats
-    await recalculateStats();
 
     res.json({ success: true });
 
