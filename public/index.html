@@ -510,7 +510,8 @@
       activePlayers: [],
       eliminated: new Set(),
       isGameActive: false,
-      isAdmin: !!localStorage.getItem('adminToken')
+      isAdmin: !!localStorage.getItem('adminToken'),
+      history: []
     };
 
     // --- INIT ---
@@ -802,6 +803,7 @@
     async function loadHistory() {
       const res = await fetch('/api/history');
       const data = await res.json();
+      state.history = data; // Save for edit lookup
 
       // Update Header
       const theadRow = document.querySelector('#historyTable thead tr');
@@ -823,7 +825,7 @@
         const pList = g.players.join(', ');
         const deleteBtn = state.isAdmin
           ? `<td>
-                 <button onclick="editGame(${g.id}, '${escapeHtml(JSON.stringify(g))}')" style="background:#f39c12;padding:5px 10px;width:auto;font-size:0.8em;margin-right:5px">Edit</button>
+                 <button onclick="editGame(${g.id})" style="background:#f39c12;padding:5px 10px;width:auto;font-size:0.8em;margin-right:5px">Edit</button>
                  <button onclick="deleteGame(${g.id})" style="background:#e53e3e;padding:5px 10px;width:auto;font-size:0.8em">Del</button>
                </td>`
           : '';
@@ -839,21 +841,12 @@
     }
 
     // HTML Escape helper to prevent breakage in onclick
-    function escapeHtml(text) {
-      if (!text) return '';
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
 
-    function editGame(id, gameJson) {
-      // Need to decode back because we passed escaped string
-      const t = document.createElement('textarea');
-      t.innerHTML = gameJson;
-      const game = JSON.parse(t.value);
+
+    function editGame(id) {
+      // Find game in state.history
+      const game = state.history.find(g => g.id === id);
+      if (!game) return alert("Game not found in local state");
 
       document.getElementById('editGameId').value = id;
 
