@@ -502,6 +502,28 @@
     </div>
   </div>
 
+  <!-- Edit Game Modal -->
+  <div id="editGameModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit Game</h2>
+      <input type="hidden" id="editGameId">
+      <div id="editGameForm" class="results-form">
+        <label>🥇 Winner</label>
+        <select id="editWinner"></select>
+
+        <label>🥈 2nd Place</label>
+        <select id="editSecond"></select>
+
+        <label>🥉 3rd Place</label>
+        <select id="editThird"></select>
+      </div>
+      <br>
+      <button onclick="saveEdit()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Save Changes</button>
+      <button onclick="document.getElementById('editGameModal').classList.remove('show')"
+        style="background: #777; margin-top:10px">Cancel</button>
+    </div>
+  </div>
+
   <script>
     // --- STATE ---
     let state = {
