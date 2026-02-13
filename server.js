@@ -38,7 +38,10 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS player_stats (
       player TEXT PRIMARY KEY,
       games_played INTEGER DEFAULT 0,
-      wins INTEGER DEFAULT 0
+      wins INTEGER DEFAULT 0,
+      total_buyins REAL DEFAULT 0,
+      total_winnings REAL DEFAULT 0,
+      net_profit REAL DEFAULT 0
     )
   `, (err) => {
     if (err) console.error('Error creating player_stats table:', err);
@@ -116,6 +119,35 @@ db.serialize(() => {
       }
     });
 
+    // Check games table for buy_in column
+    db.all(`PRAGMA table_info(games)`, [], (err, columns) => {
+      if (err) return;
+      if (columns && !columns.some(col => col.name === 'buy_in')) {
+        console.log('Adding buy_in column to games...');
+        db.run(`ALTER TABLE games ADD COLUMN buy_in REAL DEFAULT 0`, (err) => {
+          if (err) console.error('Error adding buy_in column:', err);
+        });
+      }
+    });
+
+    // Check player_stats for financial columns
+    db.all(`PRAGMA table_info(player_stats)`, [], (err, columns) => {
+      if (err) return;
+      const hasNetProfit = columns.some(col => col.name === 'net_profit');
+
+      if (!hasNetProfit) {
+        console.log('Adding financial columns to player_stats...');
+        db.serialize(() => {
+          db.run(`ALTER TABLE player_stats ADD COLUMN total_buyins REAL DEFAULT 0`);
+          db.run(`ALTER TABLE player_stats ADD COLUMN total_winnings REAL DEFAULT 0`);
+          db.run(`ALTER TABLE player_stats ADD COLUMN net_profit REAL DEFAULT 0`, async () => {
+            console.log("Recalculating stats for financial schema...");
+            await recalculateStats();
+          });
+        });
+      }
+    });
+
   }, 100);
 });
 
@@ -188,17 +220,26 @@ function verifyAdminToken(req, res, next) {
   next();
 }
 
-function updatePlayerStats(players, winner = null) {
+function describePayouts(playerCount, buyIn) {
+  const totalPot = playerCount * buyIn;
+  if (totalPot === 0) return { first: 0, second: 0, third: 0 };
+
+  // Determine payouts: Winner Takes All
+  return { first: totalPot, second: 0, third: 0, totalPot };
+}
+
+function updatePlayerStats(players, buyIn = 0) {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       players.forEach(player => {
         db.run(
-          `INSERT INTO player_stats (player, games_played, wins)
-           VALUES (?, 1, ?)
+          `INSERT INTO player_stats (player, games_played, wins, total_buyins, net_profit)
+           VALUES (?, 1, 0, ?, ?)
            ON CONFLICT(player) DO UPDATE SET
            games_played = games_played + 1,
-           wins = wins + ?`,
-          [player, player === winner ? 1 : 0, player === winner ? 1 : 0]
+           total_buyins = total_buyins + ?,
+           net_profit = net_profit - ?`,
+          [player, buyIn, -buyIn, buyIn, buyIn]
         );
       });
       resolve();
@@ -217,7 +258,7 @@ function recalculateStats() {
         }
 
         // Recalculate from games
-        db.all('SELECT players, winner, second_place, third_place FROM games', [], (err, games) => {
+        db.all('SELECT players, winner, second_place, third_place, buy_in FROM games', [], (err, games) => {
           if (err) {
             reject(err);
             return;
@@ -231,9 +272,12 @@ function recalculateStats() {
 
             players.forEach(player => {
               if (!stats[player]) {
-                stats[player] = { games: 0, wins: 0, top3: 0 };
+                stats[player] = { games: 0, wins: 0, top3: 0, buyins: 0, winnings: 0 };
               }
               stats[player].games++;
+
+              const buyIn = game.buy_in || 0;
+              stats[player].buyins += buyIn;
 
               if (game.winner === player) {
                 stats[player].wins++;
@@ -242,14 +286,23 @@ function recalculateStats() {
                 stats[player].top3++;
               }
             });
+
+            // Calculate winnings for this game
+            const buyIn = game.buy_in || 0;
+            if (buyIn > 0 && game.winner) {
+              const payouts = describePayouts(players.length, buyIn);
+              if (stats[game.winner]) stats[game.winner].winnings += payouts.first;
+              if (game.second_place && stats[game.second_place]) stats[game.second_place].winnings += payouts.second;
+              if (game.third_place && stats[game.third_place]) stats[game.third_place].winnings += payouts.third;
+            }
           });
 
           // Insert recalculated stats
           const insertPromises = Object.entries(stats).map(([player, stat]) => {
             return new Promise((res, rej) => {
               db.run(
-                'INSERT INTO player_stats (player, games_played, wins, top3) VALUES (?, ?, ?, ?)',
-                [player, stat.games, stat.wins, stat.top3],
+                'INSERT INTO player_stats (player, games_played, wins, top3, total_buyins, total_winnings, net_profit) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [player, stat.games, stat.wins, stat.top3, stat.buyins, stat.winnings, stat.winnings - stat.buyins],
                 (err) => err ? rej(err) : res()
               );
             });
@@ -265,7 +318,7 @@ function recalculateStats() {
 // API Routes
 app.get("/api/active-game", (req, res) => {
   db.get(
-    "SELECT id, players, seating_hash FROM games WHERE winner IS NULL ORDER BY id DESC LIMIT 1",
+    "SELECT id, players, seating_hash, buy_in FROM games WHERE winner IS NULL ORDER BY id DESC LIMIT 1",
     [],
     (err, row) => {
       if (err) {
@@ -278,7 +331,8 @@ app.get("/api/active-game", (req, res) => {
         try {
           const gameData = {
             id: row.id,
-            seating: JSON.parse(row.players) // Note: The database stores 'players' as the ordered seating
+            seating: JSON.parse(row.players), // Note: The database stores 'players' as the ordered seating
+            buyIn: row.buy_in || 0
           };
           res.json(gameData);
         } catch (parseError) {
@@ -294,6 +348,7 @@ app.get("/api/active-game", (req, res) => {
 
 app.post("/api/generate", async (req, res) => {
   const players = req.body.players;
+  const buyIn = Number(req.body.buyIn) || 0;
 
   if (!Array.isArray(players) || players.length < 2) {
     return res.status(400).json({ error: "Invalid players list" });
@@ -338,8 +393,8 @@ app.post("/api/generate", async (req, res) => {
     if (!exists) {
       const gameId = await new Promise((resolve, reject) => {
         db.run(
-          "INSERT INTO games (players, seating_hash) VALUES (?, ?)",
-          [JSON.stringify(seating), hash],
+          "INSERT INTO games (players, seating_hash, buy_in) VALUES (?, ?, ?)",
+          [JSON.stringify(seating), hash, buyIn],
           function (err) {
             if (err) reject(err);
             else resolve(this.lastID);
@@ -348,7 +403,7 @@ app.post("/api/generate", async (req, res) => {
       });
 
       // Update player stats (games played)
-      await updatePlayerStats(seating);
+      await updatePlayerStats(seating, buyIn);
 
       return res.json({ seating, gameId });
     }
@@ -368,7 +423,7 @@ app.post("/api/results", async (req, res) => {
     // Get game to verify it exists and get players
     const game = await new Promise((resolve, reject) => {
       db.get(
-        "SELECT players FROM games WHERE id = ?",
+        "SELECT players, buy_in FROM games WHERE id = ?",
         [gameId],
         (err, row) => {
           if (err) reject(err);
@@ -447,7 +502,7 @@ app.post("/api/results", async (req, res) => {
 
 app.get("/api/stats", (_, res) => {
   db.all(
-    "SELECT player, games_played, wins, top3 FROM player_stats ORDER BY wins DESC, top3 DESC, games_played DESC",
+    "SELECT player, games_played, wins, top3, total_buyins, total_winnings, net_profit FROM player_stats ORDER BY net_profit DESC, wins DESC, games_played DESC",
     [],
     (err, rows) => {
       if (err) {
@@ -459,6 +514,9 @@ app.get("/api/stats", (_, res) => {
         gamesPlayed: row.games_played,
         wins: row.wins,
         top3: row.top3 || 0,
+        buyins: row.total_buyins || 0,
+        winnings: row.total_winnings || 0,
+        netProfit: row.net_profit || 0,
         winRate: row.games_played > 0
           ? Math.round((row.wins / row.games_played) * 100)
           : 0,
@@ -474,7 +532,7 @@ app.get("/api/stats", (_, res) => {
 
 app.get("/api/history", (req, res) => {
   db.all(
-    "SELECT id, created_at, players, winner, second_place, third_place FROM games ORDER BY id DESC LIMIT 20",
+    "SELECT id, created_at, players, winner, second_place, third_place, buy_in FROM games ORDER BY id DESC LIMIT 20",
     [],
     (err, rows) => {
       if (err) {
@@ -502,7 +560,10 @@ app.get("/api/history", (req, res) => {
             players: parsedPlayers,
             winner: r.winner,
             second_place: r.second_place,
-            third_place: r.third_place
+            second_place: r.second_place,
+            third_place: r.third_place,
+            buyIn: r.buy_in || 0,
+            payouts: r.buy_in ? describePayouts(parsedPlayers.length, r.buy_in) : null
           };
         });
 

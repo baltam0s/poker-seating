@@ -199,12 +199,31 @@
       box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
     }
 
+    /* Animation Keyframes */
+    @keyframes dealCard {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 0;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
     .seat {
       position: absolute;
       padding: 5px 10px;
       background: white;
       border-radius: 8px;
       transform: translate(-50%, -50%);
+      /* Default state */
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       border: 2px solid var(--primary);
       text-align: center;
@@ -212,6 +231,35 @@
       /* Reduced from 80 */
       font-size: 0.9em;
       color: #333;
+      transition: all 0.3s ease;
+    }
+
+    .seat.animate-entry {
+      animation: dealCard 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .dealer-button-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: 2px solid #333;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .dealer-button-center.dealing {
+      opacity: 1;
     }
 
     @media (max-width: 600px) {
@@ -388,6 +436,11 @@
           <input type="text" id="newPlayer" placeholder="Add new player (Enter)" onkeypress="handlePlayerInput(event)">
           <div class="player-list" id="playerList"></div>
           <br>
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 0.9em; font-weight: bold;">Buy-in Amount (RSD)</label>
+            <input type="number" id="buyIn" value="500" min="0" placeholder="500"
+              style="width: 100px; margin-left: 10px;">
+          </div>
           <button id="generateBtn" onclick="generateSeating()">Generate Seating</button>
           <div id="gameStatus" class="status-msg"></div>
         </div>
@@ -423,6 +476,8 @@
       <div>
         <div class="card">
           <h2>⏱️ Blinds: <span id="blindLevel">Lvl 1</span></h2>
+          <div id="potDisplay"
+            style="text-align: center; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; color: #ffd700;"></div>
           <div class="timer-display" id="timer">45:00</div>
           <div class="timer-controls">
             <button onclick="timer.start()">▶</button>
@@ -455,8 +510,8 @@
               <th>Games</th>
               <th>Wins</th>
               <th>Win %</th>
-              <th>Top 3</th>
-              <th>Top 3 %</th>
+              <th>Net Profit</th>
+              <th>ROI %</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -470,6 +525,7 @@
               <th>Winner</th>
               <th>2nd</th>
               <th>3rd</th>
+              <th>Buy-in</th>
               <th>Players</th>
             </tr>
           </thead>
@@ -521,6 +577,7 @@
       activePlayers: [],
       eliminated: new Set(),
       isGameActive: false,
+      buyIn: 0,
       isAdmin: !!localStorage.getItem('adminToken'),
       history: []
     };
@@ -607,11 +664,13 @@
       showMessage('Generating...', 'status-msg');
       document.getElementById('generateBtn').disabled = true;
 
+      const buyIn = document.getElementById('buyIn').value;
+
       try {
         const res = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ players: selected })
+          body: JSON.stringify({ players: selected, buyIn })
         });
         const data = await res.json();
 
@@ -620,6 +679,7 @@
         // GAME START
         state.gameId = data.gameId;
         state.activePlayers = data.seating;
+        state.buyIn = buyIn;
         state.eliminated = new Set();
         state.isGameActive = true;
 
@@ -630,7 +690,7 @@
         }));
 
         updateUIForGameStart();
-        renderTable(data.seating);
+        renderTable(data.seating, true); // Animate!
         showMessage('');
         timer.reset();
 
@@ -643,10 +703,11 @@
     function restoreGame(gameData) {
       state.gameId = gameData.id || gameData.gameId; // Handle both formats
       state.activePlayers = gameData.seating;
+      state.buyIn = gameData.buyIn || 0;
       state.isGameActive = true;
       state.eliminated = new Set(); // Loss of elimination state on refresh is acceptable for now
       updateUIForGameStart();
-      renderTable(state.activePlayers);
+      renderTable(state.activePlayers, false); // Instant render
     }
 
     function updateUIForGameStart() {
@@ -657,7 +718,22 @@
       const resultsPanel = document.getElementById('resultsPanel');
       resultsPanel.classList.add('show');
 
+      updatePotDisplay();
       updateResultDropdowns();
+    }
+
+    function updatePotDisplay() {
+      const potDiv = document.getElementById('potDisplay');
+      if (!state.buyIn || state.buyIn == 0) {
+        potDiv.style.display = 'none';
+        return;
+      }
+
+      const totalPot = state.activePlayers.length * state.buyIn;
+
+      // Winner Takes All display
+      potDiv.style.display = 'block';
+      potDiv.innerText = `💰 Pot: ${totalPot} RSD (Winner Takes All)`;
     }
 
     function updateResultDropdowns() {
@@ -674,20 +750,9 @@
         if (state.isAdmin) {
           await deleteGame(state.gameId);
         } else {
-          // Non-admins can't "delete" from DB via admin API, 
-          // but if the game is active (no winner), we might need a way to void it.
-          // For now, if we are strictly locking, maybe ONLY admins can cancel?
-          // Or we add a public /api/cancel endpoint. 
-          // Given the request, let's assume we want to clear it.
-          // For this iteration, let's try to delete it if we have the ID, 
-          // but we need an auth token.
-          // If not admin, we might be stuck. 
-          // Let's rely on the previous logic but also try to clear server state if possible.
-          // Actually, the best way is to let anyone cancel the active game if they are the "owner"
-          // but we don't track owner.
-          // Let's alert the user they need admin to delete a server-tracked game.
+          // If not admin, we just clear local state as discussed
           if (!state.isAdmin) {
-            alert("Only admins can fully delete a tracked game from the server. This will only clear your local view.");
+            // alert("Only admins can fully delete a tracked game from the server. This will only clear your local view.");
           }
         }
       }
@@ -739,19 +804,32 @@
       }
     }
 
-    function renderTable(seating) {
+    function renderTable(seating, animate = false) {
       const container = document.getElementById('tableContainer');
       const positions = calculateRectangularPositions(seating.length);
 
       const html = seating.map((p, i) => {
         const pos = positions[i];
-        return `<div class="seat" id="seat-${i}" style="left:${pos.x}%; top:${pos.y}%">
+        // Handle animation style
+        const style = animate ?
+          `left:${pos.x}%; top:${pos.y}%; opacity: 0; animation-delay: ${i * 0.2}s` :
+          `left:${pos.x}%; top:${pos.y}%`;
+
+        const className = animate ? 'seat animate-entry' : 'seat';
+
+        return `<div class="${className}" id="seat-${i}" style="${style}">
                     <div>${p}</div>
                     <button class="eliminate-btn" onclick="toggleElimination('${p}', ${i})">×</button>
                 </div>`;
       }).join('');
 
-      container.innerHTML = `<div class="poker-table"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.3);font-size:2em">♠♥♣♦</div>${html}</div>`;
+      const dealer = `<div class="dealer-button-center ${animate ? 'dealing' : ''}">D</div>`;
+
+      container.innerHTML = `<div class="poker-table">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.3);font-size:2em">♠♥♣♦</div>
+          ${dealer}
+          ${html}
+        </div>`;
     }
 
     function calculateRectangularPositions(numSeats) {
@@ -814,16 +892,22 @@
       const res = await fetch('/api/stats');
       const data = await res.json();
       const tbody = document.querySelector('#statsTable tbody');
-      tbody.innerHTML = data.map(r => `
+      tbody.innerHTML = data.map(r => {
+        const netClass = r.netProfit > 0 ? 'color:#28a745' : (r.netProfit < 0 ? 'color:#e53e3e' : '');
+        // ROI = (Net Profit / Total Buy-ins) * 100
+        const roi = r.buyins > 0 ? Math.round((r.netProfit / r.buyins) * 100) : 0;
+        const roiClass = roi > 0 ? 'color:#28a745' : (roi < 0 ? 'color:#e53e3e' : '');
+
+        return `
                 <tr>
                     <td>${r.player}</td>
                     <td>${r.gamesPlayed}</td>
                     <td>${r.wins}</td>
                     <td>${r.winRate}%</td>
-                    <td>${r.top3}</td>
-                    <td>${r.top3Rate}%</td>
-                </tr>
-            `).join('') || '<tr><td colspan="6">No stats yet</td></tr>';
+                    <td style="${netClass}">${r.netProfit} RSD</td>
+                    <td style="${roiClass}">${roi}%</td>
+                </tr>`;
+      }).join('') || '<tr><td colspan="6">No stats yet</td></tr>';
     }
 
     async function loadHistory() {
@@ -857,13 +941,14 @@
           : '';
         return `<tr>
                     <td>${date}</td>
-                    <td style="color:#28a745;font-weight:bold">${g.winner || '-'}</td>
+                    <td>${g.winner || '-'}</td>
                     <td>${g.second_place || '-'}</td>
                     <td>${g.third_place || '-'}</td>
+                    <td>${g.buyIn ? g.buyIn + ' RSD' : '-'}</td>
                     <td style="font-size:0.8em;color:#666">${pList}</td>
                     ${deleteBtn}
                 </tr>`;
-      }).join('') || `<tr><td colspan="${state.isAdmin ? 6 : 5}">No history yet</td></tr>`;
+      }).join('') || `<tr><td colspan="${state.isAdmin ? 7 : 6}">No history yet</td></tr>`;
     }
 
     // HTML Escape helper to prevent breakage in onclick
@@ -878,15 +963,15 @@
 
       // Populate dropdowns with players from that game
       const players = game.players;
-      const opts = players.map(p => `<option value="${p}">${p}</option>`).join('');
+      const opts = players.map(p => `< option value = "${p}" > ${p}</option > `).join('');
 
       const wSelect = document.getElementById('editWinner');
       const sSelect = document.getElementById('editSecond');
       const tSelect = document.getElementById('editThird');
 
-      wSelect.innerHTML = `<option value="">-- Select --</option>` + opts;
-      sSelect.innerHTML = `<option value="">-- None --</option>` + opts;
-      tSelect.innerHTML = `<option value="">-- None --</option>` + opts;
+      wSelect.innerHTML = `< option value = "" > --Select --</option > ` + opts;
+      sSelect.innerHTML = `< option value = "" > --None --</option > ` + opts;
+      tSelect.innerHTML = `< option value = "" > --None --</option > ` + opts;
 
       wSelect.value = game.winner || '';
       sSelect.value = game.second_place || '';
@@ -909,7 +994,7 @@
 
       try {
         const token = localStorage.getItem('adminToken');
-        const res = await fetch(`/api/admin/game/${id}`, {
+        const res = await fetch(`/ api / admin / game / ${id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -942,7 +1027,7 @@
 
       try {
         const token = localStorage.getItem('adminToken');
-        const res = await fetch(`/api/admin/game/${id}`, {
+        const res = await fetch(`/ api / admin / game / ${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -966,7 +1051,7 @@
 
     function setTab(name) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelector(`.tab[onclick="setTab('${name}')"]`).classList.add('active');
+      document.querySelector(`.tab[onclick = "setTab('${name}')"]`).classList.add('active');
       document.getElementById('tab-stats').style.display = name === 'stats' ? 'block' : 'none';
       document.getElementById('tab-history').style.display = name === 'history' ? 'block' : 'none';
     }
@@ -1147,7 +1232,7 @@
 
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
-        document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        document.getElementById('timer').textContent = `${m}: ${s.toString().padStart(2, '0')}`;
       }
     };
   </script>
