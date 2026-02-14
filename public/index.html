@@ -475,15 +475,8 @@
       <!-- TABLE & TIMER -->
       <div>
         <div class="card">
-          <h2>⏱️ Blinds: <span id="blindLevel">Lvl 1</span></h2>
           <div id="potDisplay"
             style="text-align: center; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; color: #ffd700;"></div>
-          <div class="timer-display" id="timer">45:00</div>
-          <div class="timer-controls">
-            <button onclick="timer.start()">▶</button>
-            <button onclick="timer.pause()">⏸</button>
-            <button onclick="timer.reset()">↺</button>
-          </div>
         </div>
         <br>
         <div class="card">
@@ -606,7 +599,8 @@
       renderPlayerList();
       loadStats();
       loadHistory();
-      timer.init();
+
+
 
       // Check for server-side active game
       checkForActiveGame();
@@ -692,7 +686,7 @@
         updateUIForGameStart();
         renderTable(data.seating, true); // Animate!
         showMessage('');
-        timer.reset();
+
 
       } catch (e) {
         alert(e.message);
@@ -770,7 +764,6 @@
       document.getElementById('playerList').style.opacity = '1';
       document.getElementById('resultsPanel').classList.remove('show');
       document.getElementById('tableContainer').innerHTML = '<div style="opacity: 0.5">Waiting for game...</div>';
-      timer.pause();
     }
 
     async function submitResults() {
@@ -1097,144 +1090,7 @@
       if (!msg) el.style.display = 'none';
     }
 
-    // --- TIMER (Robust & Persistent) ---
-    const timer = {
-      interval: null,
 
-      init() {
-        // Recover state from localStorage
-        const status = localStorage.getItem('timerStatus') || 'stopped';
-        const level = parseInt(localStorage.getItem('timerLevel')) || 1;
-        const remaining = parseInt(localStorage.getItem('timerRemaining')) || (45 * 60);
-        const endTime = parseInt(localStorage.getItem('timerEndTime'));
-
-        if (status === 'running' && endTime) {
-          const now = Date.now();
-          if (now >= endTime) {
-            // Timer expired while away
-            this.handleExpiry(now);
-          } else {
-            // Resume
-            this.startInterval();
-          }
-        }
-
-        this.updateDisplay();
-      },
-
-      start() {
-        const status = localStorage.getItem('timerStatus') || 'stopped';
-        if (status === 'running') return;
-
-        let remaining = parseInt(localStorage.getItem('timerRemaining')) || (45 * 60);
-
-        // Calculate new Target Time
-        const endTime = Date.now() + (remaining * 1000);
-
-        localStorage.setItem('timerStatus', 'running');
-        localStorage.setItem('timerEndTime', endTime);
-        localStorage.setItem('timerRemaining', remaining); // Valid backup
-
-        this.startInterval();
-      },
-
-      startInterval() {
-        if (this.interval) clearInterval(this.interval);
-
-        this.update(); // Immediate update
-
-        this.interval = setInterval(() => {
-          this.update();
-        }, 1000);
-      },
-
-      pause() {
-        const status = localStorage.getItem('timerStatus');
-        if (status !== 'running') return;
-
-        // Calculate actual remaining time and save it
-        const endTime = parseInt(localStorage.getItem('timerEndTime'));
-        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-
-        localStorage.setItem('timerStatus', 'paused');
-        localStorage.setItem('timerRemaining', remaining);
-        localStorage.removeItem('timerEndTime');
-
-        if (this.interval) clearInterval(this.interval);
-        this.interval = null;
-        this.updateDisplay();
-      },
-
-      reset() {
-        if (this.interval) clearInterval(this.interval);
-        this.interval = null;
-
-        localStorage.setItem('timerStatus', 'stopped');
-        localStorage.setItem('timerRemaining', 45 * 60);
-        localStorage.setItem('timerLevel', 1);
-        localStorage.removeItem('timerEndTime');
-
-        this.updateDisplay();
-      },
-
-      update() {
-        const endTime = parseInt(localStorage.getItem('timerEndTime'));
-        if (!endTime) return;
-
-        const remaining = Math.ceil((endTime - Date.now()) / 1000);
-
-        if (remaining <= 0) {
-          this.handleExpiry(Date.now());
-        } else {
-          // Just update display (don't constantly write strictly to storage to avoid I/O thrashing, 
-          // but we rely on endTime which is static)
-          this.updateDisplay(remaining);
-        }
-      },
-
-      handleExpiry(now) {
-        // Level Up
-        let level = parseInt(localStorage.getItem('timerLevel')) || 1;
-        level++;
-
-        // Reset for next level
-        const newDuration = 45 * 60;
-        const nextEndTime = now + (newDuration * 1000); // Immediately start next level? User usually wants this continuous
-
-        localStorage.setItem('timerLevel', level);
-        localStorage.setItem('timerRemaining', newDuration);
-        localStorage.setItem('timerEndTime', nextEndTime);
-
-        // Play Sound
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        osc.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 1.0);
-
-        this.updateDisplay();
-      },
-
-      updateDisplay(secondsOverride) {
-        let seconds = secondsOverride;
-        if (seconds === undefined) {
-          seconds = parseInt(localStorage.getItem('timerRemaining')) || (45 * 60);
-          const status = localStorage.getItem('timerStatus');
-          if (status === 'running') {
-            const endTime = parseInt(localStorage.getItem('timerEndTime'));
-            if (endTime) {
-              seconds = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-            }
-          }
-        }
-
-        const level = localStorage.getItem('timerLevel') || 1;
-        document.getElementById('blindLevel').textContent = `Lvl ${level}`;
-
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        document.getElementById('timer').textContent = `${m}: ${s.toString().padStart(2, '0')}`;
-      }
-    };
   </script>
 </body>
 
