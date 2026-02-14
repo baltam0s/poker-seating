@@ -100,8 +100,27 @@
       background: var(--card-light);
       border-radius: 12px;
       padding: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       transition: 0.3s;
+    }
+
+    #resultsPanel {
+      display: none;
+    }
+
+    #resultsPanel.show {
+      display: block;
+    }
+
+    .active-game-controls {
+      display: none;
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .active-game-controls.show {
+      display: block;
     }
 
     body.dark-mode .card {
@@ -445,6 +464,13 @@
           <div id="gameStatus" class="status-msg"></div>
         </div>
 
+        <!-- ACTIVE GAME CONTROLS (Hidden until game starts) -->
+        <div id="activeGameControls" class="active-game-controls" style="margin-top: 20px;">
+          <button onclick="showResultsPanel()"
+            style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-weight: bold; font-size: 1.1em; cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3); transition: transform 0.2s;">🏁
+            Finish Game</button>
+        </div>
+
         <!-- RESULTS PANEL (Hidden until game starts) -->
         <div id="resultsPanel" class="results-panel">
           <h3>🏆 Submit Results</h3>
@@ -464,21 +490,21 @@
               <option value="">-- None --</option>
             </select>
           </div>
-        </div>
 
-        <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
-          <label style="display:block; margin-bottom:5px">🔄 Rebuys (Count)</label>
-          <div id="rebuyList"
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 150px; overflow-y: auto;">
-            <!-- Populated by JS -->
+          <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
+            <label style="display:block; margin-bottom:5px">🔄 Rebuys (Count)</label>
+            <div id="rebuyList"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 150px; overflow-y: auto;">
+              <!-- Populated by JS -->
+            </div>
           </div>
-        </div>
 
-        <br>
-        <button onclick="submitResults()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Finish Game &
-          Save</button>
-        <button onclick="cancelGame()" style="background: #e53e3e; margin-top: 10px; font-size: 0.9em;">Cancel
-          Game</button>
+          <br>
+          <button onclick="submitResults()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Finish Game &
+            Save</button>
+          <button onclick="cancelGame()" style="background: #e53e3e; margin-top: 10px; font-size: 0.9em;">Cancel
+            Game</button>
+        </div>
       </div>
     </div>
 
@@ -570,6 +596,12 @@
 
         <label>🥉 3rd Place</label>
         <select id="editThird"></select>
+
+        <label>🔄 Rebuys (Count)</label>
+        <div id="editRebuyList"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 150px; overflow-y: auto; margin-top:5px; margin-bottom:15px;">
+          <!-- JS Populated -->
+        </div>
       </div>
       <br>
       <button onclick="saveEdit()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Save Changes</button>
@@ -606,6 +638,7 @@
       window.adminLogin = adminLogin;
       window.toggleTheme = toggleTheme;
       window.setTab = setTab;
+      window.showResultsPanel = showResultsPanel; // Expose the new function
 
       if (state.players.length === 0) {
         state.players = ['Dime', 'Lazić', 'Peđa', 'Đovani', 'Bane', 'Miha', 'Šegi'];
@@ -726,10 +759,20 @@
       document.getElementById('playerList').style.opacity = '0.7';
 
       const resultsPanel = document.getElementById('resultsPanel');
-      resultsPanel.classList.add('show');
+      resultsPanel.classList.remove('show');
+
+      const gameControls = document.getElementById('activeGameControls');
+      if (gameControls) gameControls.classList.add('show');
 
       updatePotDisplay();
       updateResultDropdowns();
+    }
+
+    function showResultsPanel() {
+      const controls = document.getElementById('activeGameControls');
+      const panel = document.getElementById('resultsPanel');
+      if (controls) controls.classList.remove('show');
+      if (panel) panel.classList.add('show');
     }
 
     function updatePotDisplay() {
@@ -754,12 +797,16 @@
 
       // Populate Rebuys
       const rebuyList = document.getElementById('rebuyList');
-      rebuyList.innerHTML = state.activePlayers.map(p => `
-        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 4px;">
-            <span style="font-size: 0.85em;">${p}</span>
-            <input type="number" min="0" value="0" class="rebuy-input" data-player="${p}" style="width: 40px; padding: 2px; height: auto;">
-        </div>
-      `).join('');
+      if (rebuyList && state.activePlayers.length > 0) {
+        rebuyList.innerHTML = state.activePlayers.map(p => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 4px;">
+                <span style="font-size: 0.85em;">${p}</span>
+                <input type="number" min="0" value="0" class="rebuy-input" data-player="${p}" style="width: 40px; padding: 2px; height: auto;">
+            </div>
+          `).join('');
+      } else if (rebuyList) {
+        rebuyList.innerHTML = '<div style="opacity:0.5; font-size:0.8em">No active players found</div>';
+      }
     }
 
     async function cancelGame() {
@@ -788,6 +835,8 @@
       document.getElementById('playerList').style.pointerEvents = 'auto';
       document.getElementById('playerList').style.opacity = '1';
       document.getElementById('resultsPanel').classList.remove('show');
+      const controls = document.getElementById('activeGameControls');
+      if (controls) controls.classList.remove('show');
       document.getElementById('tableContainer').innerHTML = '<div style="opacity: 0.5">Waiting for game...</div>';
     }
 
@@ -1005,6 +1054,22 @@
       tSelect.value = game.third_place || '';
 
       document.getElementById('editGameModal').classList.add('show');
+
+      // Populate Edit Rebuys
+      const rbList = document.getElementById('editRebuyList');
+      if (rbList) {
+        let existingRebuys = {};
+        try {
+          existingRebuys = typeof game.rebuys === 'string' ? JSON.parse(game.rebuys) : (game.rebuys || {});
+        } catch (e) { console.error("Error parsing rebuys", e); }
+
+        rbList.innerHTML = players.map(p => `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 4px;">
+              <span style="font-size: 0.85em;">${p}</span>
+              <input type="number" min="0" value="${existingRebuys[p] || 0}" class="edit-rebuy-input" data-player="${p}" style="width: 40px; padding: 2px; height: auto;">
+          </div>
+        `).join('');
+      }
     }
 
     async function saveEdit() {
@@ -1020,6 +1085,13 @@
       if (first && (first === second || first === third)) return alert("One player cannot hold multiple places");
       if (second && second === third) return alert("One player cannot hold multiple places");
 
+      // Collect Rebuys
+      const rebuys = {};
+      document.querySelectorAll('.edit-rebuy-input').forEach(input => {
+        const count = parseInt(input.value) || 0;
+        if (count > 0) rebuys[input.dataset.player] = count;
+      });
+
       try {
         const token = localStorage.getItem('adminToken');
         const res = await fetch(`/api/admin/game/${id}`, {
@@ -1032,7 +1104,8 @@
             winner: first || null,
             second_place: second || null,
             third_place: third || null,
-            buy_in: buyIn ? Number(buyIn) : undefined
+            buy_in: buyIn ? Number(buyIn) : undefined,
+            rebuys: rebuys
           })
         });
 

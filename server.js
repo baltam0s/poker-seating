@@ -518,7 +518,7 @@ app.get("/api/stats", (_, res) => {
 
 app.get("/api/history", (req, res) => {
   db.all(
-    "SELECT id, created_at, players, winner, second_place, third_place, buy_in FROM games ORDER BY id DESC LIMIT 20",
+    "SELECT id, created_at, players, winner, second_place, third_place, buy_in, rebuys FROM games ORDER BY id DESC LIMIT 20",
     [],
     (err, rows) => {
       if (err) {
@@ -549,6 +549,7 @@ app.get("/api/history", (req, res) => {
             second_place: r.second_place,
             third_place: r.third_place,
             buyIn: r.buy_in || 0,
+            rebuys: r.rebuys || '{}',
             payouts: r.buy_in ? describePayouts(parsedPlayers.length, r.buy_in) : null
           };
         });
@@ -723,6 +724,7 @@ app.patch("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
     if (second_place !== undefined) { updateFields.push("second_place = ?"); updateValues.push(second_place || null); }
     if (third_place !== undefined) { updateFields.push("third_place = ?"); updateValues.push(third_place || null); }
     if (buy_in !== undefined) { updateFields.push("buy_in = ?"); updateValues.push(buy_in); }
+    if (req.body.rebuys !== undefined) { updateFields.push("rebuys = ?"); updateValues.push(JSON.stringify(req.body.rebuys || {})); }
 
     if (updateFields.length > 0) {
       updateValues.push(gameId);
