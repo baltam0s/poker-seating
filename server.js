@@ -148,6 +148,17 @@ db.serialize(() => {
       }
     });
 
+    // Check games table for rebuys column
+    db.all(`PRAGMA table_info(games)`, [], (err, columns) => {
+      if (err) return;
+      if (columns && !columns.some(col => col.name === 'rebuys')) {
+        console.log('Adding rebuys column to games...');
+        db.run(`ALTER TABLE games ADD COLUMN rebuys TEXT DEFAULT '{}'`, (err) => {
+          if (err) console.error('Error adding rebuys column:', err);
+        });
+      }
+    });
+
   }, 100);
 });
 
@@ -220,9 +231,9 @@ function verifyAdminToken(req, res, next) {
   next();
 }
 
-function describePayouts(playerCount, buyIn) {
-  const totalPot = playerCount * buyIn;
-  if (totalPot === 0) return { first: 0, second: 0, third: 0 };
+function describePayouts(playerCount, buyIn, totalRebuys = 0) {
+  const totalPot = (playerCount * buyIn) + (totalRebuys * buyIn);
+  if (totalPot === 0) return { first: 0, second: 0, third: 0, totalPot: 0 };
 
   // Determine payouts: Winner Takes All
   return { first: totalPot, second: 0, third: 0, totalPot };
@@ -251,65 +262,68 @@ function recalculateStats() {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       // Reset all stats
-      db.run('DELETE FROM player_stats', (err) => {
+      db.run('DELETE FROM player_stats');
+
+      // Recalculate from games
+      db.all('SELECT players, winner, second_place, third_place, buy_in, rebuys FROM games', [], (err, games) => {
         if (err) {
           reject(err);
           return;
         }
 
-        // Recalculate from games
-        db.all('SELECT players, winner, second_place, third_place, buy_in FROM games', [], (err, games) => {
-          if (err) {
-            reject(err);
-            return;
-          }
+        const stats = {};
 
-          const stats = {};
+        games.forEach(game => {
+          const players = JSON.parse(game.players);
+          const rebuys = game.rebuys ? JSON.parse(game.rebuys) : {};
 
-          games.forEach(game => {
-            let players = [];
-            try { players = JSON.parse(game.players); } catch (e) { }
+          // Fix: ensure players is array
+          if (!Array.isArray(players)) return;
 
-            players.forEach(player => {
-              if (!stats[player]) {
-                stats[player] = { games: 0, wins: 0, top3: 0, buyins: 0, winnings: 0 };
-              }
-              stats[player].games++;
+          players.forEach(player => {
+            if (!stats[player]) {
+              stats[player] = { games: 0, wins: 0, top3: 0, buyins: 0, winnings: 0 };
+            }
+            stats[player].games++;
 
-              const buyIn = game.buy_in || 0;
-              stats[player].buyins += buyIn;
-
-              if (game.winner === player) {
-                stats[player].wins++;
-                stats[player].top3++;
-              } else if (game.second_place === player || game.third_place === player) {
-                stats[player].top3++;
-              }
-            });
-
-            // Calculate winnings for this game
             const buyIn = game.buy_in || 0;
-            if (buyIn > 0 && game.winner) {
-              const payouts = describePayouts(players.length, buyIn);
-              if (stats[game.winner]) stats[game.winner].winnings += payouts.first;
-              if (game.second_place && stats[game.second_place]) stats[game.second_place].winnings += payouts.second;
-              if (game.third_place && stats[game.third_place]) stats[game.third_place].winnings += payouts.third;
+            const playerRebuys = rebuys[player] || 0;
+            stats[player].buyins += buyIn * (1 + playerRebuys);
+
+            if (game.winner === player) {
+              stats[player].wins++;
+              stats[player].top3++;
+            } else if (game.second_place === player || game.third_place === player) {
+              stats[player].top3++;
             }
           });
 
-          // Insert recalculated stats
-          const insertPromises = Object.entries(stats).map(([player, stat]) => {
-            return new Promise((res, rej) => {
-              db.run(
-                'INSERT INTO player_stats (player, games_played, wins, top3, total_buyins, total_winnings, net_profit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [player, stat.games, stat.wins, stat.top3, stat.buyins, stat.winnings, stat.winnings - stat.buyins],
-                (err) => err ? rej(err) : res()
-              );
-            });
-          });
+          // Calculate winnings for this game
+          const buyIn = game.buy_in || 0;
+          if (buyIn > 0 && game.winner) {
+            // Calculate total rebuys for pot
+            let totalRebuyCount = 0;
+            Object.values(rebuys).forEach(count => totalRebuyCount += (count || 0));
 
-          Promise.all(insertPromises).then(() => resolve()).catch(reject);
+            const payouts = describePayouts(players.length, buyIn, totalRebuyCount);
+            if (stats[game.winner]) stats[game.winner].winnings += payouts.first;
+            if (game.second_place && stats[game.second_place]) stats[game.second_place].winnings += payouts.second;
+            if (game.third_place && stats[game.third_place]) stats[game.third_place].winnings += payouts.third;
+          }
         });
+
+        // Insert recalculated stats
+        const insertPromises = Object.entries(stats).map(([player, stat]) => {
+          return new Promise((res, rej) => {
+            db.run(
+              'INSERT INTO player_stats (player, games_played, wins, top3, total_buyins, total_winnings, net_profit) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              [player, stat.games, stat.wins, stat.top3, stat.buyins, stat.winnings, stat.winnings - stat.buyins],
+              (err) => err ? rej(err) : res()
+            );
+          });
+        });
+
+        Promise.all(insertPromises).then(() => resolve()).catch(reject);
       });
     });
   });
@@ -413,7 +427,7 @@ app.post("/api/generate", async (req, res) => {
 });
 
 app.post("/api/results", async (req, res) => {
-  const { gameId, first, second, third } = req.body;
+  const { gameId, first, second, third, rebuys } = req.body;
 
   if (!gameId || !first) {
     return res.status(400).json({ error: "Missing gameId or first place winner" });
@@ -449,11 +463,11 @@ app.post("/api/results", async (req, res) => {
       return res.status(400).json({ error: "Third place not in game" });
     }
 
-    // Update game with placements
+    // Update game with placements and rebuys
     await new Promise((resolve, reject) => {
       db.run(
-        "UPDATE games SET winner = ?, second_place = ?, third_place = ? WHERE id = ?",
-        [first, second || null, third || null, gameId],
+        "UPDATE games SET winner = ?, second_place = ?, third_place = ?, rebuys = ? WHERE id = ?",
+        [first, second || null, third || null, JSON.stringify(rebuys || {}), gameId],
         (err) => {
           if (err) reject(err);
           else resolve();
@@ -461,36 +475,8 @@ app.post("/api/results", async (req, res) => {
       );
     });
 
-    // Update winner's stats
-    await new Promise((resolve, reject) => {
-      db.run(
-        `UPDATE player_stats SET wins = wins + 1, top3 = top3 + 1 WHERE player = ?`,
-        [first],
-        (err) => err ? reject(err) : resolve()
-      );
-    });
-
-    // Update 2nd place stats
-    if (second) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          `UPDATE player_stats SET top3 = top3 + 1 WHERE player = ?`,
-          [second],
-          (err) => err ? reject(err) : resolve()
-        );
-      });
-    }
-
-    // Update 3rd place stats
-    if (third) {
-      await new Promise((resolve, reject) => {
-        db.run(
-          `UPDATE player_stats SET top3 = top3 + 1 WHERE player = ?`,
-          [third],
-          (err) => err ? reject(err) : resolve()
-        );
-      });
-    }
+    // RECALCULATE ALL STATS to be safe and accurate with rebuys
+    await recalculateStats();
 
     res.json({ success: true });
 
@@ -707,7 +693,7 @@ app.delete("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
 
 app.patch("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
   const gameId = req.params.id;
-  const { winner, second_place, third_place } = req.body;
+  const { winner, second_place, third_place, buy_in } = req.body;
 
   try {
     // Get game to verify it exists
@@ -736,6 +722,7 @@ app.patch("/api/admin/game/:id", verifyAdminToken, async (req, res) => {
     if (winner !== undefined) { updateFields.push("winner = ?"); updateValues.push(winner || null); }
     if (second_place !== undefined) { updateFields.push("second_place = ?"); updateValues.push(second_place || null); }
     if (third_place !== undefined) { updateFields.push("third_place = ?"); updateValues.push(third_place || null); }
+    if (buy_in !== undefined) { updateFields.push("buy_in = ?"); updateValues.push(buy_in); }
 
     if (updateFields.length > 0) {
       updateValues.push(gameId);

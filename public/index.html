@@ -464,69 +464,79 @@
               <option value="">-- None --</option>
             </select>
           </div>
-          <br>
-          <button onclick="submitResults()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Finish Game &
-            Save</button>
-          <button onclick="cancelGame()" style="background: #e53e3e; margin-top: 10px; font-size: 0.9em;">Cancel
-            Game</button>
         </div>
-      </div>
 
-      <!-- TABLE & TIMER -->
-      <div>
-        <div class="card">
-          <div id="potDisplay"
-            style="text-align: center; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; color: #ffd700;"></div>
-        </div>
-        <br>
-        <div class="card">
-          <h2>🪑 Table</h2>
-          <div class="poker-table-container" id="tableContainer">
-            <div style="opacity: 0.5">Waiting for game...</div>
+        <div style="margin-top: 15px; border-top: 1px solid #444; padding-top: 10px;">
+          <label style="display:block; margin-bottom:5px">🔄 Rebuys (Count)</label>
+          <div id="rebuyList"
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 150px; overflow-y: auto;">
+            <!-- Populated by JS -->
           </div>
         </div>
+
+        <br>
+        <button onclick="submitResults()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Finish Game &
+          Save</button>
+        <button onclick="cancelGame()" style="background: #e53e3e; margin-top: 10px; font-size: 0.9em;">Cancel
+          Game</button>
       </div>
     </div>
 
-    <br>
-    <!-- STATS & HISTORY -->
-    <div class="card">
-      <div class="tabs">
-        <button class="tab active" onclick="setTab('stats')">📊 Stats</button>
-        <button class="tab" onclick="setTab('history')">📜 History</button>
+    <!-- TABLE & TIMER -->
+    <div>
+      <div class="card">
+        <div id="potDisplay"
+          style="text-align: center; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; color: #ffd700;"></div>
       </div>
-      <div id="tab-stats" class="table-wrap">
-        <table id="statsTable">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Games</th>
-              <th>Wins</th>
-              <th>Win %</th>
-              <th>Net Profit</th>
-              <th>ROI %</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div id="tab-history" class="table-wrap" style="display:none">
-        <table id="historyTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Winner</th>
-              <th>2nd</th>
-              <th>3rd</th>
-              <th>Buy-in</th>
-              <th>Players</th>
-            </tr>
-          </thead>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <br>
+      <div class="card">
+        <h2>🪑 Table</h2>
+        <div class="poker-table-container" id="tableContainer">
+          <div style="opacity: 0.5">Waiting for game...</div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <br>
+  <!-- STATS & HISTORY -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('stats')">📊 Stats</button>
+      <button class="tab" onclick="setTab('history')">📜 History</button>
+    </div>
+    <div id="tab-stats" class="table-wrap">
+      <table id="statsTable">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Games</th>
+            <th>Wins</th>
+            <th>Win %</th>
+            <th>Net Profit</th>
+            <th>ROI %</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="tab-history" class="table-wrap" style="display:none">
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Winner</th>
+            <th>2nd</th>
+            <th>3rd</th>
+            <th>Buy-in</th>
+            <th>Players</th>
+          </tr>
+        </thead>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
   </div>
 
   <!-- Admin Modal -->
@@ -545,8 +555,14 @@
     <div class="modal-content">
       <h2>Edit Game</h2>
       <input type="hidden" id="editGameId">
-      <div id="editGameForm" class="results-form">
-        <label>🥇 Winner</label>
+      <div
+        style="background: #2d3748; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px; text-align: left;">
+        <h2>Edit Game Result</h2>
+
+        <label>💰 Buy-in Amount (RSD)</label>
+        <input type="number" id="editBuyIn" style="width: 100%; margin-bottom: 15px;">
+
+        <label>🏆 Winner</label>
         <select id="editWinner"></select>
 
         <label>🥈 2nd Place</label>
@@ -735,6 +751,15 @@
       document.getElementById('winner1').innerHTML = `<option value="" disabled selected>Select Winner</option>` + opts;
       document.getElementById('winner2').innerHTML = `<option value="">-- None --</option>` + opts;
       document.getElementById('winner3').innerHTML = `<option value="">-- None --</option>` + opts;
+
+      // Populate Rebuys
+      const rebuyList = document.getElementById('rebuyList');
+      rebuyList.innerHTML = state.activePlayers.map(p => `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 4px;">
+            <span style="font-size: 0.85em;">${p}</span>
+            <input type="number" min="0" value="0" class="rebuy-input" data-player="${p}" style="width: 40px; padding: 2px; height: auto;">
+        </div>
+      `).join('');
     }
 
     async function cancelGame() {
@@ -777,12 +802,20 @@
       }
 
       try {
+        // Collect Rebuys
+        const rebuys = {};
+        document.querySelectorAll('.rebuy-input').forEach(input => {
+          const count = parseInt(input.value) || 0;
+          if (count > 0) rebuys[input.dataset.player] = count;
+        });
+
         const res = await fetch('/api/results', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             gameId: state.gameId,
-            first, second, third
+            first, second, third,
+            rebuys
           })
         });
         if (!res.ok) throw new Error("Failed to save results");
@@ -953,18 +986,19 @@
       if (!game) return alert("Game not found in local state");
 
       document.getElementById('editGameId').value = id;
+      document.getElementById('editBuyIn').value = game.buyIn || 0;
 
       // Populate dropdowns with players from that game
       const players = game.players;
-      const opts = players.map(p => `< option value = "${p}" > ${p}</option > `).join('');
+      const opts = players.map(p => `<option value="${p}">${p}</option>`).join('');
 
       const wSelect = document.getElementById('editWinner');
       const sSelect = document.getElementById('editSecond');
       const tSelect = document.getElementById('editThird');
 
-      wSelect.innerHTML = `< option value = "" > --Select --</option > ` + opts;
-      sSelect.innerHTML = `< option value = "" > --None --</option > ` + opts;
-      tSelect.innerHTML = `< option value = "" > --None --</option > ` + opts;
+      wSelect.innerHTML = `<option value="">--Select --</option>` + opts;
+      sSelect.innerHTML = `<option value="">--None --</option>` + opts;
+      tSelect.innerHTML = `<option value="">--None --</option>` + opts;
 
       wSelect.value = game.winner || '';
       sSelect.value = game.second_place || '';
@@ -975,6 +1009,7 @@
 
     async function saveEdit() {
       const id = document.getElementById('editGameId').value;
+      const buyIn = document.getElementById('editBuyIn').value;
       const first = document.getElementById('editWinner').value;
       const second = document.getElementById('editSecond').value;
       const third = document.getElementById('editThird').value;
@@ -987,7 +1022,7 @@
 
       try {
         const token = localStorage.getItem('adminToken');
-        const res = await fetch(`/ api / admin / game / ${id}`, {
+        const res = await fetch(`/api/admin/game/${id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -996,7 +1031,8 @@
           body: JSON.stringify({
             winner: first || null,
             second_place: second || null,
-            third_place: third || null
+            third_place: third || null,
+            buy_in: buyIn ? Number(buyIn) : undefined
           })
         });
 
