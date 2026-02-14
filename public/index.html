@@ -113,14 +113,76 @@
       display: block;
     }
 
-    .active-game-controls {
-      display: none;
-      text-align: center;
-      margin-top: 15px;
-    }
-
     .active-game-controls.show {
       display: block;
+    }
+
+    /* Mobile Improvements */
+    @media (max-width: 600px) {
+      body {
+        padding: 5px;
+      }
+
+      .container {
+        padding: 5px;
+      }
+
+      .card {
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+
+      h1 {
+        font-size: 1.2em;
+      }
+
+      h2 {
+        font-size: 1.2em;
+      }
+
+      .table-wrap table td,
+      .table-wrap table th {
+        padding: 8px 4px;
+        font-size: 0.85em;
+      }
+
+      .seat {
+        width: 50px;
+        height: 65px;
+      }
+
+      .seat-content {
+        padding: 5px 2px;
+      }
+
+      .seat-content .name {
+        font-size: 0.7em;
+      }
+    }
+
+    #potDisplay:not(:empty) {
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      color: #ffd700;
+      text-align: center;
+      font-size: 1.1em;
+      font-weight: bold;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     body.dark-mode .card {
@@ -511,11 +573,7 @@
     <!-- TABLE & TIMER -->
     <div>
       <div class="card">
-        <div id="potDisplay"
-          style="text-align: center; font-size: 1.2em; margin-bottom: 10px; font-weight: bold; color: #ffd700;"></div>
-      </div>
-      <br>
-      <div class="card">
+        <div id="potDisplay"></div>
         <h2>🪑 Table</h2>
         <div class="poker-table-container" id="tableContainer">
           <div style="opacity: 0.5">Waiting for game...</div>
@@ -786,7 +844,7 @@
 
       // Winner Takes All display
       potDiv.style.display = 'block';
-      potDiv.innerText = `💰 Pot: ${totalPot} RSD (Winner Takes All)`;
+      potDiv.innerHTML = `<div class="pot-display-card mobile-pot-display">💰 Pot: ${totalPot} RSD (Winner Takes All)</div>`;
     }
 
     function updateResultDropdowns() {
