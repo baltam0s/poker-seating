@@ -88,6 +88,7 @@
     .main-content {
       display: grid;
       gap: 20px;
+      align-items: stretch;
     }
 
     @media (min-width: 1000px) {
@@ -103,6 +104,13 @@
       margin-bottom: 20px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       transition: 0.3s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-content>.card {
+      margin-bottom: 0;
+      height: 100%;
     }
 
     #resultsPanel {
