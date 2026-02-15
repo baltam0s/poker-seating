@@ -46,7 +46,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px 20px;
+      padding: 15px 0;
       margin-bottom: 20px;
       position: relative;
     }
@@ -146,7 +146,7 @@
       }
 
       .header {
-        padding: 15px;
+        padding: 15px 0;
       }
 
       .table-wrap table td,
@@ -589,47 +589,45 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <br>
-  <!-- STATS & HISTORY -->
-  <div class="card">
-    <div class="tabs">
-      <button class="tab active" onclick="setTab('stats')">📊 Stats</button>
-      <button class="tab" onclick="setTab('history')">📜 History</button>
+    <br>
+    <!-- STATS & HISTORY -->
+    <div class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="setTab('stats')">📊 Stats</button>
+        <button class="tab" onclick="setTab('history')">📜 History</button>
+      </div>
+      <div id="tab-stats" class="table-wrap">
+        <table id="statsTable">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Games</th>
+              <th>Wins</th>
+              <th>Win %</th>
+              <th>Profit</th>
+              <th>Top 3 %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="tab-history" class="table-wrap" style="display:none">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Winner</th>
+              <th>2nd</th>
+              <th>3rd</th>
+              <th>Buy-in</th>
+              <th>Players</th>
+            </tr>
+          </thead>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-    <div id="tab-stats" class="table-wrap">
-      <table id="statsTable">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Games</th>
-            <th>Wins</th>
-            <th>Win %</th>
-            <th>Profit</th>
-            <th>Top 3 %</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div id="tab-history" class="table-wrap" style="display:none">
-      <table id="historyTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Winner</th>
-            <th>2nd</th>
-            <th>3rd</th>
-            <th>Buy-in</th>
-            <th>Players</th>
-          </tr>
-        </thead>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
   </div>
 
   <!-- Admin Modal -->
@@ -671,7 +669,8 @@
         </div>
       </div>
       <br>
-      <button onclick="saveEdit()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Save Changes</button>
+      <button onclick="saveEdit()" style="background: linear-gradient(135deg, #FFD700, #FFA500);">Save
+        Changes</button>
       <button onclick="document.getElementById('editGameModal').classList.remove('show')"
         style="background: #777; margin-top:10px">Cancel</button>
     </div>
