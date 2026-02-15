@@ -46,7 +46,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 15px 0;
+      padding: 15px 20px;
       margin-bottom: 20px;
       position: relative;
     }
@@ -145,8 +145,8 @@
         font-size: 1.2em;
       }
 
-      h2 {
-        font-size: 1.2em;
+      .header {
+        padding: 15px;
       }
 
       .table-wrap table td,
@@ -606,8 +606,8 @@
             <th>Games</th>
             <th>Wins</th>
             <th>Win %</th>
-            <th>Net Profit</th>
-            <th>ROI %</th>
+            <th>Profit</th>
+            <th>Top 3 %</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1036,9 +1036,7 @@
       const tbody = document.querySelector('#statsTable tbody');
       tbody.innerHTML = data.map(r => {
         const netClass = r.netProfit > 0 ? 'color:#28a745' : (r.netProfit < 0 ? 'color:#e53e3e' : '');
-        // ROI = (Net Profit / Total Buy-ins) * 100
-        const roi = r.buyins > 0 ? Math.round((r.netProfit / r.buyins) * 100) : 0;
-        const roiClass = roi > 0 ? 'color:#28a745' : (roi < 0 ? 'color:#e53e3e' : '');
+        const top3Class = r.top3Rate > 0 ? 'color:#28a745' : '';
 
         return `
                 <tr>
@@ -1047,7 +1045,7 @@
                     <td>${r.wins}</td>
                     <td>${r.winRate}%</td>
                     <td style="${netClass}">${r.netProfit} RSD</td>
-                    <td style="${roiClass}">${roi}%</td>
+                    <td style="${top3Class}">${r.top3Rate}%</td>
                 </tr>`;
       }).join('') || '<tr><td colspan="6">No stats yet</td></tr>';
     }
